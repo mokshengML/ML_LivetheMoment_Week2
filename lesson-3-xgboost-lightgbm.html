@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 3: XGBoost & LightGBM — MokshPath</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --orange:#E87A2E;--orange-dark:#D06A20;--orange-light:#F5943E;--orange-glow:rgba(232,122,46,0.12);
+  --navy:#2B2D42;--navy-dark:#1A1B2E;
+  --bg:#F3EDE7;--bg-card:#FFFFFF;--bg-light:#F9F5F0;
+  --text-primary:#2B2D42;--text-secondary:#6B6D7B;--text-muted:#9597A6;
+  --border:#E5DDD4;
+  --green:#4CAF50;--green-light:#E8F5E9;--red:#E74C3C;--blue:#3498DB;--purple:#8E44AD;
+  --shadow-sm:0 2px 8px rgba(43,45,66,0.06);
+  --shadow-md:0 8px 24px rgba(43,45,66,0.08);
+  --shadow-lg:0 16px 48px rgba(43,45,66,0.12);
+  --radius:14px;--radius-sm:8px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text-primary);-webkit-font-smoothing:antialiased;line-height:1.55}
+
+.nav{position:sticky;top:0;z-index:100;background:var(--bg-card);border-bottom:1px solid var(--border);padding:0 2rem;height:72px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow-sm)}
+.nav-brand{display:flex;align-items:center;gap:.7rem}
+.nav-brand-icon{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--orange),var(--orange-light));display:flex;align-items:center;justify-content:center;color:#fff;font-family:'DM Serif Display',serif;font-size:1.2rem}
+.nav-brand-text{display:flex;flex-direction:column;line-height:1.15}
+.nav-brand-name{font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--navy)}
+.nav-brand-name em{font-style:normal;color:var(--orange)}
+.nav-brand-tag{font-size:.62rem;color:var(--text-muted);font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.nav-right{display:flex;align-items:center;gap:1rem}
+.lesson-pill{padding:.4rem .9rem;border-radius:50px;background:var(--orange-glow);color:var(--orange);font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.nav-logo{width:56px;height:auto;filter:drop-shadow(0 4px 12px rgba(232,122,46,0.18));animation:float 3.5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+.hero{padding:4rem 2rem 2.5rem;background:linear-gradient(180deg,var(--bg) 0%,var(--bg-light) 100%)}
+.hero-inner{max-width:1080px;margin:0 auto;text-align:center}
+.hero-badge{display:inline-flex;align-items:center;gap:.5rem;padding:.45rem 1.1rem;border-radius:50px;background:var(--orange-glow);color:var(--orange);font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1.2rem}
+.hero-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--orange);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.hero h1{font-family:'DM Serif Display',serif;font-size:clamp(2rem,4.5vw,3.2rem);line-height:1.15;color:var(--navy);margin-bottom:1rem}
+.hero h1 em{font-style:normal;color:var(--orange)}
+.hero-sub{font-size:1.05rem;color:var(--text-secondary);line-height:1.7;max-width:680px;margin:0 auto 1.5rem}
+.audience-chips{display:flex;justify-content:center;gap:.4rem;flex-wrap:wrap;margin-top:1rem}
+.audience-chip{padding:.3rem .8rem;border-radius:50px;background:var(--bg-card);border:1px solid var(--border);font-size:.7rem;font-weight:600;color:var(--text-secondary)}
+.audience-chip svg{width:11px;height:11px;display:inline;vertical-align:middle;margin-right:.3rem;color:var(--green)}
+
+section{padding:3.5rem 2rem}
+.container{max-width:1080px;margin:0 auto}
+.section-header{text-align:center;margin-bottom:2.5rem}
+.section-label{display:inline-flex;align-items:center;gap:.4rem;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--orange);margin-bottom:.5rem}
+.section-label .num{width:22px;height:22px;border-radius:50%;background:var(--orange);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem}
+.section-title{font-family:'DM Serif Display',serif;font-size:clamp(1.5rem,3vw,2.1rem);color:var(--navy);line-height:1.25;margin-bottom:.5rem}
+.section-sub{font-size:.95rem;color:var(--text-secondary);line-height:1.7;max-width:620px;margin:0 auto}
+
+.analogy{background:var(--bg-card);border-radius:var(--radius);padding:2rem;border:1px solid var(--border);box-shadow:var(--shadow-sm);margin-top:1rem}
+.analogy-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:2rem;align-items:center}
+.analogy-text h3{font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--navy);margin-bottom:.6rem}
+.analogy-text p{font-size:.92rem;color:var(--text-secondary);line-height:1.7;margin-bottom:.8rem}
+.analogy-text .highlight{padding:.7rem .9rem;background:var(--orange-glow);border-radius:var(--radius-sm);border-left:3px solid var(--orange);font-size:.86rem;color:var(--text-primary);margin-top:.8rem}
+.analogy-text .highlight strong{color:var(--orange)}
+.analogy-text em{font-style:italic;color:var(--navy);font-weight:600}
+
+.playground{background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:2rem;margin-top:2rem;box-shadow:var(--shadow-sm)}
+.playground-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px dashed var(--border)}
+.playground-title{font-family:'DM Serif Display',serif;font-size:1.25rem;color:var(--navy);display:flex;align-items:center;gap:.5rem}
+.playground-title .pg-num{width:30px;height:30px;border-radius:50%;background:var(--orange);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.85rem;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800}
+.playground-task{font-size:.78rem;color:var(--orange);font-weight:600;padding:.4rem .8rem;background:var(--orange-glow);border-radius:50px}
+.playground-body{display:grid;grid-template-columns:1fr;gap:1.5rem}
+.playground-body.split{grid-template-columns:1.4fr 1fr}
+.playground-viz{background:var(--bg-light);border-radius:var(--radius-sm);padding:1rem;border:1px solid var(--border);min-height:320px}
+.playground-controls{display:flex;flex-direction:column;gap:1rem}
+
+input[type=range]{-webkit-appearance:none;width:100%;height:6px;background:var(--border);border-radius:50px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--orange);cursor:pointer;border:3px solid #fff;box-shadow:0 2px 6px rgba(232,122,46,0.4);transition:transform .15s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15)}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--orange);cursor:pointer;border:3px solid #fff;box-shadow:0 2px 6px rgba(232,122,46,0.4)}
+.control-row{display:flex;flex-direction:column;gap:.4rem}
+.control-label{font-size:.78rem;font-weight:600;color:var(--navy);display:flex;align-items:center;justify-content:space-between}
+.control-label .val{font-family:'DM Serif Display',serif;font-size:1rem;color:var(--orange)}
+
+.metric-row{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.4rem}
+.metric{flex:1;min-width:90px;padding:.6rem .7rem;background:var(--bg-light);border-radius:var(--radius-sm);text-align:center;border:1px solid var(--border)}
+.metric-label{font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.15rem}
+.metric-val{font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--navy)}
+.metric.highlight .metric-val{color:var(--orange)}
+.metric.good .metric-val{color:var(--green)}
+.metric.bad .metric-val{color:var(--red)}
+
+.btn{padding:.6rem 1.2rem;border-radius:10px;border:none;background:var(--orange);color:#fff;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem}
+.btn:hover{background:var(--orange-dark);transform:translateY(-1px);box-shadow:0 4px 14px rgba(232,122,46,0.3)}
+.btn:disabled{background:var(--text-muted);cursor:not-allowed;transform:none;box-shadow:none}
+.btn.secondary{background:transparent;color:var(--navy);border:1.5px solid var(--border)}
+.btn.secondary:hover{border-color:var(--orange);color:var(--orange);background:var(--bg-light);box-shadow:none}
+.btn-group{display:flex;gap:.5rem;flex-wrap:wrap}
+
+.insight{margin-top:1rem;padding:.9rem 1.1rem;background:linear-gradient(135deg,rgba(232,122,46,0.06),rgba(76,175,80,0.04));border-radius:var(--radius-sm);border-left:3px solid var(--orange);font-size:.85rem;line-height:1.6;color:var(--text-primary)}
+.insight strong{color:var(--orange)}
+.insight.green{border-left-color:var(--green)}
+.insight.green strong{color:var(--green)}
+.insight.red{border-left-color:var(--red)}
+.insight.red strong{color:var(--red)}
+
+/* Boosting rounds */
+.round-strip{display:flex;gap:.5rem;align-items:center;justify-content:center;margin-bottom:.8rem;flex-wrap:wrap}
+.round-chip{padding:.35rem .7rem;border-radius:50px;background:var(--bg-light);border:1.5px solid var(--border);font-size:.7rem;font-weight:700;color:var(--text-secondary);transition:all .25s}
+.round-chip.active{background:var(--orange);color:#fff;border-color:var(--orange);transform:scale(1.1)}
+.round-chip.done{background:var(--green-light);color:#2E7D32;border-color:var(--green)}
+
+/* CV folds */
+.cv-grid{display:grid;grid-template-columns:80px repeat(10,1fr);gap:3px;margin-bottom:.6rem;align-items:center}
+.cv-label{font-size:.75rem;font-weight:700;color:var(--navy)}
+.cv-cell{height:30px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:700;color:#fff;transition:all .3s}
+.cv-cell.train{background:var(--orange-light);color:#fff}
+.cv-cell.val{background:var(--navy);color:#fff}
+.cv-fold-score{font-size:.75rem;font-weight:700;color:var(--orange);font-family:'DM Serif Display',serif;text-align:center;margin-left:.4rem}
+
+/* level vs leaf compare */
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:.5rem}
+.compare-card{background:var(--bg-light);border-radius:var(--radius-sm);padding:1rem;border:1px solid var(--border)}
+.compare-card h4{font-family:'DM Serif Display',serif;font-size:1.05rem;color:var(--navy);margin-bottom:.3rem;display:flex;align-items:center;gap:.4rem}
+.compare-card .badge-xgb{font-size:.6rem;font-weight:800;background:var(--orange);color:#fff;padding:.1rem .4rem;border-radius:50px;letter-spacing:.05em}
+.compare-card .badge-lgb{font-size:.6rem;font-weight:800;background:var(--purple);color:#fff;padding:.1rem .4rem;border-radius:50px;letter-spacing:.05em}
+.compare-card p{font-size:.78rem;color:var(--text-secondary);line-height:1.55;margin-bottom:.5rem}
+
+/* Case study */
+.case-study{background:linear-gradient(135deg,var(--navy-dark),var(--navy));color:#fff;border-radius:var(--radius);padding:2.5rem;margin-top:2rem;position:relative;overflow:hidden}
+.case-study::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:rgba(232,122,46,0.12)}
+.case-study-content{position:relative;z-index:1}
+.case-tag{display:inline-block;padding:.3rem .8rem;border-radius:50px;background:rgba(255,255,255,0.1);color:var(--orange-light);font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem}
+.case-study h3{font-family:'DM Serif Display',serif;font-size:1.5rem;margin-bottom:.6rem}
+.case-study p{font-size:.92rem;color:rgba(255,255,255,0.78);line-height:1.7;margin-bottom:1rem}
+.persona-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1.5rem}
+.persona{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius-sm);padding:1.1rem}
+.persona-role{font-size:.65rem;font-weight:700;color:var(--orange-light);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem}
+.persona-text{font-size:.82rem;color:rgba(255,255,255,0.78);line-height:1.6}
+.persona-text strong{color:#fff}
+
+/* Quiz */
+.quiz{background:var(--bg-card);border-radius:var(--radius);padding:1.8rem;border:1px solid var(--border);margin-top:1.5rem}
+.quiz-q{font-size:.95rem;font-weight:600;color:var(--navy);margin-bottom:1rem;display:flex;gap:.5rem}
+.quiz-q .qnum{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--orange-glow);color:var(--orange);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800}
+.quiz-options{display:flex;flex-direction:column;gap:.5rem}
+.quiz-option{padding:.7rem .9rem;background:var(--bg-light);border:1.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;font-size:.85rem;color:var(--text-primary);transition:all .15s;text-align:left;font-family:inherit}
+.quiz-option:hover{border-color:var(--orange);background:#fff}
+.quiz-option.correct{background:var(--green-light);border-color:var(--green);color:#2E7D32}
+.quiz-option.wrong{background:rgba(231,76,60,0.08);border-color:var(--red);color:#C0392B}
+.quiz-explanation{margin-top:.8rem;padding:.7rem .9rem;background:var(--orange-glow);border-radius:var(--radius-sm);font-size:.82rem;line-height:1.6;color:var(--text-primary);display:none}
+.quiz-explanation.show{display:block;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+
+.takeaways{background:var(--bg-light);border-radius:var(--radius);padding:2rem;margin-top:2rem;border:1px solid var(--border)}
+.takeaways h3{font-family:'DM Serif Display',serif;font-size:1.3rem;color:var(--navy);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+.takeaways h3::before{content:'✦';color:var(--orange);font-size:1.5rem}
+.takeaway-list{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.takeaway{display:flex;gap:.6rem;align-items:flex-start;padding:.7rem;background:var(--bg-card);border-radius:var(--radius-sm);border:1px solid var(--border)}
+.takeaway-num{flex-shrink:0;width:24px;height:24px;border-radius:6px;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800}
+.takeaway-text{font-size:.82rem;line-height:1.55;color:var(--text-primary)}
+.takeaway-text strong{color:var(--orange)}
+
+footer{background:var(--bg-card);border-top:1px solid var(--border);padding:2rem;margin-top:2rem;text-align:center}
+.footer-inner{max-width:1080px;margin:0 auto}
+.footer-copy{font-size:.78rem;color:var(--text-muted)}
+.footer-nav{margin-top:1rem;display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap}
+.footer-nav a{font-size:.8rem;color:var(--text-secondary);text-decoration:none;transition:color .2s}
+.footer-nav a:hover{color:var(--orange)}
+
+.svg-canvas{width:100%;height:auto;display:block;border-radius:var(--radius-sm);background:#fff}
+
+/* Tree growth viz nodes */
+.gn-rect{transition:all .4s ease;rx:6;ry:6}
+.gn-text{font-family:'Plus Jakarta Sans',sans-serif;font-size:9px;font-weight:700;fill:#fff;text-anchor:middle}
+.gn-edge{stroke:var(--text-muted);stroke-width:1.8;fill:none;transition:opacity .4s}
+
+@media(max-width:840px){
+  .nav{padding:0 1rem;height:64px}
+  .nav-brand-tag{display:none}
+  .nav-logo{width:42px}
+  section{padding:2.5rem 1.2rem}
+  .hero{padding:2.5rem 1.2rem 2rem}
+  .analogy-grid{grid-template-columns:1fr}
+  .playground{padding:1.3rem}
+  .playground-body.split{grid-template-columns:1fr}
+  .case-study{padding:1.6rem}
+  .persona-grid{grid-template-columns:1fr}
+  .takeaway-list{grid-template-columns:1fr}
+  .compare-grid{grid-template-columns:1fr}
+  .cv-grid{grid-template-columns:60px repeat(10,1fr);gap:2px}
+  .cv-cell{height:22px;font-size:.55rem}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <div class="nav-brand-icon">M</div>
+    <div class="nav-brand-text">
+      <span class="nav-brand-name">Moksh<em>Path</em></span>
+      <span class="nav-brand-tag">Learn by Doing</span>
+    </div>
+  </div>
+  <div class="nav-right">
+    <span class="lesson-pill">Lesson 3 of 5</span>
+    <img src="hero.svg" alt="MokshPath" class="nav-logo" onerror="this.style.display='none'">
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge"><span class="dot"></span> Gradient Boosting</div>
+    <h1><em>XGBoost</em> & <em>LightGBM</em></h1>
+    <p class="hero-sub">
+      Why do data scientists almost always reach for these two libraries first when handed a spreadsheet? Because boosting — teaching trees to fix each other's mistakes — has quietly won most tabular ML competitions for a decade.
+    </p>
+    <div class="audience-chips">
+      <span class="audience-chip"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Manager</span>
+      <span class="audience-chip"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Engineer</span>
+      <span class="audience-chip"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Social Scientist</span>
+      <span class="audience-chip"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Curious Beginner</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 1. INTUITION ═══ -->
+<section>
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">1</span> The Idea</div>
+      <h2 class="section-title">A student improving on each homework</h2>
+      <p class="section-sub">Random forest sends 100 students into separate rooms and averages their answers. Boosting trains one student at a time — and each one studies <em>only the questions the previous students got wrong</em>.</p>
+    </div>
+
+    <div class="analogy">
+      <div class="analogy-grid">
+        <div class="analogy-text">
+          <h3>The tutor's secret</h3>
+          <p>Imagine teaching a beginner to predict tomorrow's temperature. <em>First tree</em> simply says: "30°C — same as today." Crude, but a starting point.</p>
+          <p>Now we look at where it was wrong — maybe it overshoots on cloudy days. <em>Second tree</em> doesn't try to predict temperature from scratch. It only learns the <em>correction</em>: "subtract 3 if cloudy."</p>
+          <p>Third tree: "subtract another 1 if there was wind at 5pm." And so on. After 500 tiny corrections, the combined model is razor-sharp.</p>
+          <div class="highlight">
+            <strong>The trick:</strong> Each tree is shallow, weak, and slightly off — but together they form a precision instrument. This is <em>gradient boosting</em>, and XGBoost & LightGBM are its two most refined implementations.
+          </div>
+        </div>
+        <div>
+          <svg class="svg-canvas" viewBox="0 0 320 320" style="background:var(--bg-light)">
+            <!-- 4 stacked trees getting smaller corrections -->
+            <text x="160" y="22" font-family="DM Serif Display" font-size="13" fill="#2B2D42" text-anchor="middle">Each tree corrects the last</text>
+            <!-- Tree 1 -->
+            <g transform="translate(50,55)">
+              <rect width="60" height="44" rx="6" fill="#E87A2E"/>
+              <text x="30" y="20" font-size="9" font-weight="700" fill="#fff" text-anchor="middle">Tree 1</text>
+              <text x="30" y="35" font-size="8" fill="#fff" text-anchor="middle">guess: 30°</text>
+            </g>
+            <text x="155" y="80" font-size="9" fill="#6B6D7B">→ wrong by –3°</text>
+            <text x="155" y="92" font-size="8" fill="#9597A6" font-style="italic">(too high on cloudy days)</text>
+
+            <g transform="translate(50,115)">
+              <rect width="60" height="44" rx="6" fill="#F5943E" opacity="0.92"/>
+              <text x="30" y="20" font-size="9" font-weight="700" fill="#fff" text-anchor="middle">Tree 2</text>
+              <text x="30" y="35" font-size="8" fill="#fff" text-anchor="middle">fix: –3 cloudy</text>
+            </g>
+            <text x="155" y="140" font-size="9" fill="#6B6D7B">→ still off by –1°</text>
+            <text x="155" y="152" font-size="8" fill="#9597A6" font-style="italic">(windy evenings)</text>
+
+            <g transform="translate(50,175)">
+              <rect width="60" height="44" rx="6" fill="#F5943E" opacity="0.75"/>
+              <text x="30" y="20" font-size="9" font-weight="700" fill="#fff" text-anchor="middle">Tree 3</text>
+              <text x="30" y="35" font-size="8" fill="#fff" text-anchor="middle">fix: –1 wind</text>
+            </g>
+            <text x="155" y="200" font-size="9" fill="#6B6D7B">→ off by –0.3°</text>
+
+            <g transform="translate(50,235)">
+              <rect width="60" height="44" rx="6" fill="#F5943E" opacity="0.55"/>
+              <text x="30" y="20" font-size="9" font-weight="700" fill="#fff" text-anchor="middle">Tree 4</text>
+              <text x="30" y="35" font-size="8" fill="#fff" text-anchor="middle">tiny tweak</text>
+            </g>
+
+            <!-- arrow down + final -->
+            <line x1="80" y1="284" x2="80" y2="295" stroke="#6B6D7B" stroke-width="1.5" marker-end="url(#arr)"/>
+            <defs><marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><polygon points="0 0, 6 3, 0 6" fill="#6B6D7B"/></marker></defs>
+
+            <g transform="translate(180,235)">
+              <rect width="110" height="55" rx="8" fill="#4CAF50"/>
+              <text x="55" y="22" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">SUM = final prediction</text>
+              <text x="55" y="40" font-size="11" fill="#fff" text-anchor="middle" font-weight="700">≈ 26°C ✓</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 2. PLAYGROUND A — Watch boosting happen ═══ -->
+<section>
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">2</span> Playground A — Watch it learn</div>
+      <h2 class="section-title">Each round chips away at the error</h2>
+      <p class="section-sub">Below: a wavy function we're trying to predict. Click <em>Next round</em> and watch the boosted model add one shallow tree at a time. The dashed line is what the model currently believes.</p>
+    </div>
+
+    <div class="playground">
+      <div class="playground-header">
+        <div class="playground-title"><span class="pg-num">A</span> Boosting, round by round</div>
+        <span class="playground-task">click "next round"</span>
+      </div>
+      <div class="playground-body split">
+        <div class="playground-viz">
+          <div class="round-strip" id="roundStrip"></div>
+          <svg class="svg-canvas" viewBox="0 0 600 320" id="boostCanvas">
+            <!-- axes -->
+            <line x1="50" y1="280" x2="580" y2="280" stroke="#9597A6" stroke-width="1"/>
+            <line x1="50" y1="30" x2="50" y2="280" stroke="#9597A6" stroke-width="1"/>
+            <text x="315" y="305" font-size="10" fill="#6B6D7B" text-anchor="middle">input feature</text>
+            <text x="22" y="155" font-size="10" fill="#6B6D7B" text-anchor="middle" transform="rotate(-90 22 155)">target</text>
+
+            <!-- true curve (light reference) -->
+            <path id="trueCurve" d="" stroke="#4CAF50" stroke-width="2" fill="none" opacity="0.5" stroke-dasharray="2,3"/>
+
+            <!-- data points -->
+            <g id="dataPoints"></g>
+
+            <!-- current model prediction -->
+            <path id="modelCurve" d="" stroke="#E87A2E" stroke-width="3" fill="none"/>
+
+            <!-- residual lines -->
+            <g id="residualLines"></g>
+
+            <!-- legend -->
+            <g transform="translate(420,40)">
+              <line x1="0" y1="0" x2="20" y2="0" stroke="#4CAF50" stroke-width="2" stroke-dasharray="2,3" opacity="0.6"/>
+              <text x="25" y="3" font-size="9" fill="#6B6D7B">true target</text>
+              <line x1="0" y1="14" x2="20" y2="14" stroke="#E87A2E" stroke-width="3"/>
+              <text x="25" y="17" font-size="9" fill="#6B6D7B">model so far</text>
+              <circle cx="10" cy="28" r="3" fill="#2B2D42"/>
+              <text x="25" y="31" font-size="9" fill="#6B6D7B">data point</text>
+            </g>
+          </svg>
+        </div>
+        <div class="playground-controls">
+          <div class="control-row">
+            <label class="control-label">Learning rate (η) <span class="val" id="lrVal">0.30</span></label>
+            <input type="range" id="lrSlider" min="5" max="80" value="30">
+            <div style="font-size:.7rem;color:var(--text-muted);line-height:1.5">Smaller η means each tree contributes less — slower learning but usually a smoother result.</div>
+          </div>
+          <div class="btn-group">
+            <button class="btn" onclick="boostStep()">+ Next round</button>
+            <button class="btn secondary" onclick="boostAuto()">Auto-run 20</button>
+            <button class="btn secondary" onclick="boostReset()">Reset</button>
+          </div>
+          <div class="metric-row">
+            <div class="metric"><div class="metric-label">Round</div><div class="metric-val" id="mRound">0</div></div>
+            <div class="metric highlight"><div class="metric-label">RMSE</div><div class="metric-val" id="mRmse">—</div></div>
+          </div>
+          <div class="insight" id="boostInsight"><strong>Round 0:</strong> The model starts as a flat line at the average. It's badly wrong everywhere — those vertical grey ticks are the <em>residuals</em> the next tree must shrink.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 3. PLAYGROUND B — Hyperparameters ═══ -->
+<section style="background:var(--bg-light)">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">3</span> Playground B — Tuning the dials</div>
+      <h2 class="section-title">Three hyperparameters do most of the work</h2>
+      <p class="section-sub">Boosting is powerful, but with the wrong knobs it either underfits (lazy) or overfits (memorises noise). Move the sliders below — watch the train vs. test gap appear.</p>
+    </div>
+
+    <div class="playground">
+      <div class="playground-header">
+        <div class="playground-title"><span class="pg-num">B</span> Find the sweet spot</div>
+        <span class="playground-task">drag the three sliders</span>
+      </div>
+      <div class="playground-body split">
+        <div class="playground-viz">
+          <svg class="svg-canvas" viewBox="0 0 600 320" id="hpCanvas">
+            <text x="300" y="20" font-size="11" font-weight="700" fill="#2B2D42" text-anchor="middle" font-family="DM Serif Display">Train vs. test error over rounds</text>
+            <!-- axes -->
+            <line x1="60" y1="280" x2="580" y2="280" stroke="#9597A6" stroke-width="1"/>
+            <line x1="60" y1="40" x2="60" y2="280" stroke="#9597A6" stroke-width="1"/>
+            <text x="320" y="305" font-size="10" fill="#6B6D7B" text-anchor="middle">boosting rounds →</text>
+            <text x="32" y="160" font-size="10" fill="#6B6D7B" text-anchor="middle" transform="rotate(-90 32 160)">error</text>
+
+            <!-- grid -->
+            <g id="hpGrid"></g>
+
+            <!-- the two curves -->
+            <path id="trainCurve" d="" stroke="#3498DB" stroke-width="2.5" fill="none"/>
+            <path id="testCurve" d="" stroke="#E87A2E" stroke-width="2.5" fill="none"/>
+
+            <!-- best round marker -->
+            <line id="bestLine" x1="0" y1="40" x2="0" y2="280" stroke="#4CAF50" stroke-width="2" stroke-dasharray="3,3" opacity="0"/>
+            <text id="bestLabel" x="0" y="35" font-size="9" font-weight="700" fill="#4CAF50" text-anchor="middle" opacity="0">best</text>
+
+            <!-- legend -->
+            <g transform="translate(440,50)">
+              <line x1="0" y1="0" x2="18" y2="0" stroke="#3498DB" stroke-width="2.5"/>
+              <text x="23" y="3" font-size="9" fill="#6B6D7B">train error</text>
+              <line x1="0" y1="14" x2="18" y2="14" stroke="#E87A2E" stroke-width="2.5"/>
+              <text x="23" y="17" font-size="9" fill="#6B6D7B">test error</text>
+            </g>
+          </svg>
+        </div>
+        <div class="playground-controls">
+          <div class="control-row">
+            <label class="control-label">n_estimators (rounds) <span class="val" id="nEstVal">100</span></label>
+            <input type="range" id="nEstSlider" min="10" max="400" value="100">
+          </div>
+          <div class="control-row">
+            <label class="control-label">max_depth <span class="val" id="depthVal">4</span></label>
+            <input type="range" id="depthSlider" min="2" max="12" value="4">
+          </div>
+          <div class="control-row">
+            <label class="control-label">learning_rate <span class="val" id="hpLrVal">0.10</span></label>
+            <input type="range" id="hpLrSlider" min="2" max="50" value="10">
+          </div>
+          <div class="metric-row">
+            <div class="metric"><div class="metric-label">Train err</div><div class="metric-val" id="trainErrVal">—</div></div>
+            <div class="metric"><div class="metric-label">Test err</div><div class="metric-val" id="testErrVal">—</div></div>
+            <div class="metric highlight"><div class="metric-label">Gap</div><div class="metric-val" id="gapVal">—</div></div>
+          </div>
+          <div class="insight" id="hpInsight"><strong>Healthy fit.</strong> Both curves go down together, then plateau. That's what we want.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 4. PLAYGROUND C — CV ═══ -->
+<section>
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">4</span> Playground C — Cross-validation</div>
+      <h2 class="section-title">How we trust a single number</h2>
+      <p class="section-sub">If we tune hyperparameters on one test split, we risk fitting to its quirks. <em>K-fold CV</em> rotates the test set K times — each row gets to be "the test" exactly once.</p>
+    </div>
+
+    <div class="playground">
+      <div class="playground-header">
+        <div class="playground-title"><span class="pg-num">C</span> 5-fold CV in motion</div>
+        <span class="playground-task">try a candidate model</span>
+      </div>
+      <div class="playground-body">
+        <div class="playground-viz">
+          <div id="cvFolds"></div>
+          <div style="margin-top:.8rem;padding-top:.8rem;border-top:1px dashed var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.6rem">
+            <div style="font-size:.8rem;color:var(--text-secondary)"><strong style="color:var(--navy)">Mean CV score:</strong> <span id="cvMean" style="font-family:'DM Serif Display',serif;color:var(--orange);font-size:1.1rem">—</span> &nbsp;±&nbsp; <span id="cvStd" style="color:var(--text-muted)">—</span></div>
+            <div class="btn-group">
+              <button class="btn secondary" data-cand="A" onclick="runCV('A')">Candidate A (depth 3, η 0.1)</button>
+              <button class="btn secondary" data-cand="B" onclick="runCV('B')">Candidate B (depth 8, η 0.3)</button>
+              <button class="btn secondary" data-cand="C" onclick="runCV('C')">Candidate C (depth 5, η 0.05)</button>
+            </div>
+          </div>
+          <div class="insight" id="cvInsight"><strong>Pick a candidate above.</strong> Each candidate is a set of hyperparameters. CV gives us 5 scores; we pick the candidate with the highest mean (and acceptably low spread).</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 5. PLAYGROUND D — XGB vs LGB ═══ -->
+<section style="background:var(--bg-light)">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">5</span> Playground D — XGBoost vs LightGBM</div>
+      <h2 class="section-title">Two ways to grow the same tree</h2>
+      <p class="section-sub">Same boosting idea, different tree-growth strategy. The result: subtle but real trade-offs in speed, accuracy, and how easily each one overfits.</p>
+    </div>
+
+    <div class="playground">
+      <div class="playground-header">
+        <div class="playground-title"><span class="pg-num">D</span> Level-wise vs leaf-wise</div>
+        <span class="playground-task">click "grow"</span>
+      </div>
+      <div class="playground-body">
+        <div class="compare-grid">
+          <div class="compare-card">
+            <h4><span class="badge-xgb">XGBoost</span> Level-wise</h4>
+            <p>Grows the tree <em>one level at a time</em>, splitting all leaves on a level before moving deeper. Balanced and predictable.</p>
+            <svg class="svg-canvas" viewBox="0 0 320 220" id="xgbTree" style="background:#fff">
+              <text x="160" y="18" font-size="10" fill="#6B6D7B" text-anchor="middle">level <tspan id="xgbLevel" font-weight="700" fill="#E87A2E">0</tspan></text>
+            </svg>
+          </div>
+          <div class="compare-card">
+            <h4><span class="badge-lgb">LightGBM</span> Leaf-wise</h4>
+            <p>Grows the tree <em>by splitting the single most "profitable" leaf</em> at each step. Faster to reduce error, but skewed and overfit-prone on small data.</p>
+            <svg class="svg-canvas" viewBox="0 0 320 220" id="lgbTree" style="background:#fff">
+              <text x="160" y="18" font-size="10" fill="#6B6D7B" text-anchor="middle">leaf splits <tspan id="lgbLevel" font-weight="700" fill="#8E44AD">0</tspan></text>
+            </svg>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:center;margin-top:1rem;gap:.5rem;flex-wrap:wrap">
+          <button class="btn" onclick="growStep()">Grow next step →</button>
+          <button class="btn secondary" onclick="growReset()">Reset both</button>
+        </div>
+        <div class="insight" id="growInsight"><strong>Step 0:</strong> Both trees start as a single root node. Click "Grow next step" to see how they diverge.</div>
+
+        <div style="margin-top:1.5rem;display:grid;grid-template-columns:1fr 1fr;gap:.8rem">
+          <div style="padding:.9rem;background:rgba(232,122,46,0.08);border-radius:var(--radius-sm);border-left:3px solid var(--orange)">
+            <div style="font-size:.7rem;font-weight:700;color:var(--orange);text-transform:uppercase;margin-bottom:.3rem">When to prefer XGBoost</div>
+            <div style="font-size:.78rem;color:var(--text-primary);line-height:1.55">Small/medium datasets, when you want stable & reproducible behaviour, when the data is noisy and overfitting is a concern.</div>
+          </div>
+          <div style="padding:.9rem;background:rgba(142,68,173,0.08);border-radius:var(--radius-sm);border-left:3px solid var(--purple)">
+            <div style="font-size:.7rem;font-weight:700;color:var(--purple);text-transform:uppercase;margin-bottom:.3rem">When to prefer LightGBM</div>
+            <div style="font-size:.78rem;color:var(--text-primary);line-height:1.55">Large datasets (millions of rows), many categorical features, when training speed matters. Set <code style="font-size:.7rem">num_leaves</code> conservatively.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 6. CASE STUDY ═══ -->
+<section>
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">6</span> Case Study</div>
+      <h2 class="section-title">Credit default at a fintech lender</h2>
+    </div>
+    <div class="case-study">
+      <div class="case-study-content">
+        <span class="case-tag">Real-world scenario</span>
+        <h3>"Will this borrower repay?"</h3>
+        <p>A fintech has 400,000 historical loans, each labelled "repaid" or "defaulted." Features include income, age, employment length, debt-to-income ratio, prior late payments, loan amount, region, and 18 others. The team trains an XGBoost model. Test AUC: <strong>0.84</strong>. Three people look at the same number.</p>
+
+        <div class="persona-grid">
+          <div class="persona">
+            <div class="persona-role">Risk Manager</div>
+            <div class="persona-text">"AUC 0.84 means if I pick a random defaulter and a random repayer, the model ranks them correctly <strong>84% of the time</strong>. That lets me set a cutoff where I approve the top 60% of applicants and reject only 8% of repayers by mistake. <strong>Better than our current logistic baseline at 0.78.</strong>"</div>
+          </div>
+          <div class="persona">
+            <div class="persona-role">Data Scientist</div>
+            <div class="persona-text">"I tuned <code style="color:#F5943E">max_depth=6</code>, <code style="color:#F5943E">η=0.05</code>, <code style="color:#F5943E">n_estimators=800</code> using 5-fold CV. Used <strong>early stopping</strong> — training halted at round 642 because validation error stopped improving. Saved hours and prevented overfit."</div>
+          </div>
+          <div class="persona">
+            <div class="persona-role">Compliance Officer</div>
+            <div class="persona-text">"Auditors will ask <strong>why a specific person was denied.</strong> XGBoost's 800 trees aren't human-readable. We must pair this with SHAP (Lesson 5) and prove the model isn't using protected attributes — region could secretly encode caste or religion. Document, don't just deploy."</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 7. QUIZ ═══ -->
+<section style="background:var(--bg-light)">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">7</span> Quiz</div>
+      <h2 class="section-title">Quick check</h2>
+    </div>
+
+    <div class="quiz">
+      <div class="quiz-q"><span class="qnum">1</span> Your training error keeps falling, but your validation error stopped improving after round 200 and is now slowly rising. What's happening?</div>
+      <div class="quiz-options">
+        <button class="quiz-option" onclick="answer(this,false,1)">The learning rate is too small.</button>
+        <button class="quiz-option" onclick="answer(this,true,1)">The model is overfitting — later trees are memorising training noise. Use early stopping or reduce <code>n_estimators</code>.</button>
+        <button class="quiz-option" onclick="answer(this,false,1)">XGBoost has a bug.</button>
+      </div>
+      <div class="quiz-explanation" id="exp1">A classic boosting overfit signature: train ↓, validation ↑. The fix is <strong>early stopping</strong> — most libraries do this automatically when you pass an eval set. Reducing <code>max_depth</code> also helps by making each tree weaker.</div>
+    </div>
+
+    <div class="quiz">
+      <div class="quiz-q"><span class="qnum">2</span> You halve the learning rate from 0.1 to 0.05. To keep the same model capacity, what else should change?</div>
+      <div class="quiz-options">
+        <button class="quiz-option" onclick="answer(this,false,2)">Halve <code>n_estimators</code> too.</button>
+        <button class="quiz-option" onclick="answer(this,true,2)">Roughly double <code>n_estimators</code>.</button>
+        <button class="quiz-option" onclick="answer(this,false,2)">Increase <code>max_depth</code>.</button>
+      </div>
+      <div class="quiz-explanation" id="exp2">Each tree now contributes half as much, so you need roughly twice as many to cover the same ground. This learning-rate/n-estimators trade-off is one of the most reliable rules of thumb in boosting — smaller η plus more rounds usually generalises better.</div>
+    </div>
+
+    <div class="quiz">
+      <div class="quiz-q"><span class="qnum">3</span> Your dataset is 8 million rows with 200 features, half of which are high-cardinality categoricals (city, sub-district). Which library is the more natural first pick?</div>
+      <div class="quiz-options">
+        <button class="quiz-option" onclick="answer(this,false,3)">XGBoost — it's the original.</button>
+        <button class="quiz-option" onclick="answer(this,true,3)">LightGBM — leaf-wise growth and native categorical handling make it faster on this scale.</button>
+        <button class="quiz-option" onclick="answer(this,false,3)">Random Forest, because boosting doesn't scale.</button>
+      </div>
+      <div class="quiz-explanation" id="exp3">LightGBM was engineered for large data with many categoricals — it uses histogram-based splits and a special algorithm (GOSS) to subsample. XGBoost is excellent too, but on this scale LightGBM typically trains 3-10× faster with comparable accuracy. Watch for overfit on smaller validation slices.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 8. TAKEAWAYS ═══ -->
+<section>
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">8</span> Takeaways</div>
+      <h2 class="section-title">What to carry forward</h2>
+    </div>
+    <div class="takeaways">
+      <h3>The six things to remember</h3>
+      <div class="takeaway-list">
+        <div class="takeaway"><span class="takeaway-num">1</span><span class="takeaway-text"><strong>Boosting = sequential correction.</strong> Each tree fixes the leftover errors of the previous trees, not the original target.</span></div>
+        <div class="takeaway"><span class="takeaway-num">2</span><span class="takeaway-text"><strong>Small η + many rounds</strong> almost always beats large η + few rounds. Be patient and pair it with early stopping.</span></div>
+        <div class="takeaway"><span class="takeaway-num">3</span><span class="takeaway-text"><strong>K-fold CV</strong> is how you trust a hyperparameter choice. One test split can lie; five test splits rarely all do.</span></div>
+        <div class="takeaway"><span class="takeaway-num">4</span><span class="takeaway-text"><strong>XGBoost vs LightGBM</strong> is mostly about scale and growth strategy. Try both — they take 30 minutes to swap in.</span></div>
+        <div class="takeaway"><span class="takeaway-num">5</span><span class="takeaway-text"><strong>For tabular data,</strong> these libraries still beat deep learning in most real-world benchmarks. They are the default, not the fallback.</span></div>
+        <div class="takeaway"><span class="takeaway-num">6</span><span class="takeaway-text"><strong>Accuracy isn't enough.</strong> Once you have a 0.84 AUC, the next question is <em>why</em> — that's what Lesson 5 (SHAP) answers.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-copy">© 2026 MokshPath — Guided Path to True Learning</div>
+    <div class="footer-nav">
+      <a href="lesson-1-regression.html">Linear & Logistic Regression</a>
+      <a href="lesson-2-trees-forest.html">← Decision Trees & Forest</a>
+      <a href="lesson-4-model-evaluation.html">Next → Model Evaluation</a>
+      <a href="lesson-5-shap-values.html">SHAP Values</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ════════════════════════════════════════
+   PLAYGROUND A — BOOSTING ROUNDS
+   ════════════════════════════════════════ */
+// Generate fixed wavy target: y = sin(2x) + 0.4*x   on x ∈ [0, 6]
+const N_PTS = 25;
+const xMin = 0, xMax = 6, yMin = -1.8, yMax = 3.4;
+const xs = [], ysTrue = [], ysNoisy = [];
+(function genData(){
+  for (let i=0; i<N_PTS; i++){
+    const x = xMin + (xMax-xMin) * (i/(N_PTS-1));
+    const yT = Math.sin(2*x) + 0.4*x;
+    // deterministic pseudo-noise
+    const noise = 0.25 * Math.sin(7.3*x + 1.1) + 0.18 * Math.cos(13.1*x);
+    xs.push(x);
+    ysTrue.push(yT);
+    ysNoisy.push(yT + noise);
+  }
+})();
+
+// Coordinate transforms for boostCanvas (viewBox 0..600, 0..320)
+const PX = (x)=> 50 + (x - xMin)/(xMax-xMin) * (580-50);
+const PY = (y)=> 280 - (y - yMin)/(yMax-yMin) * (280-30);
+
+let boostRound = 0;
+let modelPred = new Array(N_PTS).fill(0);
+let initBaseline = 0;
+
+function boostInit(){
+  initBaseline = ysNoisy.reduce((a,b)=>a+b,0)/N_PTS;
+  modelPred = new Array(N_PTS).fill(initBaseline);
+  boostRound = 0;
+  // draw true curve as light reference
+  let dTrue = '';
+  for (let i=0; i<N_PTS; i++){
+    dTrue += (i===0 ? 'M' : 'L') + PX(xs[i]) + ',' + PY(ysTrue[i]) + ' ';
+  }
+  document.getElementById('trueCurve').setAttribute('d', dTrue);
+  // points
+  const pg = document.getElementById('dataPoints');
+  pg.innerHTML = '';
+  for (let i=0; i<N_PTS; i++){
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx', PX(xs[i]));
+    c.setAttribute('cy', PY(ysNoisy[i]));
+    c.setAttribute('r', 3);
+    c.setAttribute('fill', '#2B2D42');
+    pg.appendChild(c);
+  }
+  drawBoostModel();
+  drawResiduals();
+  drawRoundStrip();
+  updateBoostMetrics();
+}
+
+function drawBoostModel(){
+  let d = '';
+  for (let i=0; i<N_PTS; i++){
+    d += (i===0 ? 'M' : 'L') + PX(xs[i]) + ',' + PY(modelPred[i]) + ' ';
+  }
+  document.getElementById('modelCurve').setAttribute('d', d);
+}
+
+function drawResiduals(){
+  const g = document.getElementById('residualLines');
+  g.innerHTML = '';
+  for (let i=0; i<N_PTS; i++){
+    const ln = document.createElementNS('http://www.w3.org/2000/svg','line');
+    ln.setAttribute('x1', PX(xs[i]));
+    ln.setAttribute('x2', PX(xs[i]));
+    ln.setAttribute('y1', PY(modelPred[i]));
+    ln.setAttribute('y2', PY(ysNoisy[i]));
+    ln.setAttribute('stroke', '#9597A6');
+    ln.setAttribute('stroke-width', 1);
+    ln.setAttribute('opacity', 0.55);
+    g.appendChild(ln);
+  }
+}
+
+function drawRoundStrip(){
+  const s = document.getElementById('roundStrip');
+  s.innerHTML = '';
+  const N_CHIPS = 10;
+  for (let i=0; i<N_CHIPS; i++){
+    const c = document.createElement('div');
+    c.className = 'round-chip';
+    if (i < boostRound) c.classList.add('done');
+    if (i === boostRound-1 && boostRound>0) { c.classList.remove('done'); c.classList.add('active'); }
+    c.textContent = (i===0?'init':'+T'+i);
+    s.appendChild(c);
+  }
+  if (boostRound > N_CHIPS){
+    const extra = document.createElement('div');
+    extra.className = 'round-chip active';
+    extra.textContent = 'Round '+boostRound;
+    s.appendChild(extra);
+  }
+}
+
+// fit a very weak tree: split x range into 4 buckets, predict residual mean per bucket
+function fitWeakTree(residuals){
+  const NB = 4;
+  const buckets = Array(NB).fill(null).map(()=>({sum:0,n:0}));
+  for (let i=0; i<N_PTS; i++){
+    const bIdx = Math.min(NB-1, Math.floor((xs[i]-xMin)/(xMax-xMin) * NB));
+    buckets[bIdx].sum += residuals[i];
+    buckets[bIdx].n += 1;
+  }
+  return buckets.map(b => b.n>0 ? b.sum/b.n : 0);
+}
+
+function applyWeakTree(predictionsByBucket){
+  const NB = predictionsByBucket.length;
+  const out = new Array(N_PTS);
+  for (let i=0; i<N_PTS; i++){
+    const bIdx = Math.min(NB-1, Math.floor((xs[i]-xMin)/(xMax-xMin) * NB));
+    out[i] = predictionsByBucket[bIdx];
+  }
+  return out;
+}
+
+function boostStep(){
+  // compute residuals
+  const lr = parseInt(document.getElementById('lrSlider').value)/100;
+  const residuals = new Array(N_PTS);
+  for (let i=0; i<N_PTS; i++) residuals[i] = ysNoisy[i] - modelPred[i];
+  // depth-1 split decision evolves with round to mimic deepening of effective ensemble
+  // Use 4 buckets; with later rounds, subdivide more finely for visual progression
+  const buckets = fitWeakTree(residuals);
+  const predFromTree = applyWeakTree(buckets);
+  for (let i=0; i<N_PTS; i++) modelPred[i] += lr * predFromTree[i];
+  boostRound++;
+  drawBoostModel();
+  drawResiduals();
+  drawRoundStrip();
+  updateBoostMetrics();
+  updateBoostInsight();
+}
+
+function boostAuto(){
+  let n = 0;
+  const id = setInterval(()=>{ boostStep(); n++; if (n>=20) clearInterval(id); }, 150);
+}
+
+function boostReset(){
+  boostInit();
+  document.getElementById('boostInsight').className = 'insight';
+  document.getElementById('boostInsight').innerHTML = '<strong>Round 0:</strong> The model starts as a flat line at the average. It\'s badly wrong everywhere — those vertical grey ticks are the <em>residuals</em> the next tree must shrink.';
+}
+
+function updateBoostMetrics(){
+  const rmse = Math.sqrt(ysNoisy.reduce((a,y,i)=>a + (y-modelPred[i])**2, 0)/N_PTS);
+  document.getElementById('mRound').textContent = boostRound;
+  document.getElementById('mRmse').textContent = rmse.toFixed(2);
+}
+
+function updateBoostInsight(){
+  const el = document.getElementById('boostInsight');
+  if (boostRound < 3){
+    el.className = 'insight';
+    el.innerHTML = '<strong>Round '+boostRound+':</strong> The model is starting to capture the rough shape. Notice the residual ticks are shorter than before — each new tree shrinks them a little.';
+  } else if (boostRound < 8){
+    el.className = 'insight';
+    el.innerHTML = '<strong>Round '+boostRound+':</strong> The orange line is hugging the green dashed target. Most error has been absorbed; what\'s left is mostly noise.';
+  } else if (boostRound < 15){
+    el.className = 'insight green';
+    el.innerHTML = '<strong>Round '+boostRound+':</strong> We\'re in the diminishing-returns zone. Each new tree contributes very little. <em>Early stopping</em> in real libraries detects this and halts training automatically.';
+  } else {
+    el.className = 'insight red';
+    el.innerHTML = '<strong>Warning — round '+boostRound+':</strong> Beyond this point, extra rounds start <em>chasing the noise</em>. RMSE on test data would now rise even as training RMSE keeps falling. This is overfitting.';
+  }
+}
+
+document.getElementById('lrSlider').addEventListener('input', e=>{
+  document.getElementById('lrVal').textContent = (parseInt(e.target.value)/100).toFixed(2);
+});
+
+boostInit();
+
+/* ════════════════════════════════════════
+   PLAYGROUND B — HYPERPARAM CURVES
+   ════════════════════════════════════════ */
+function drawHpCurves(){
+  const n = parseInt(document.getElementById('nEstSlider').value);
+  const depth = parseInt(document.getElementById('depthSlider').value);
+  const lr = parseInt(document.getElementById('hpLrSlider').value)/100;
+  document.getElementById('nEstVal').textContent = n;
+  document.getElementById('depthVal').textContent = depth;
+  document.getElementById('hpLrVal').textContent = lr.toFixed(2);
+
+  // synthesize a plausible curve
+  // train: exponential decay to small value, faster with depth, faster with lr, faster with n
+  // test:  decay then turn upward (overfit), turnaround earlier with high depth or high lr
+  const W = 580 - 60; // px width
+  const H = 280 - 40; // px height
+  const yTop = 40, yBot = 280, xLeft = 60;
+
+  // y in error-space: 0 to 1
+  const trainPts = [], testPts = [];
+  const overfitStrength = Math.max(0, (depth-3))*0.15 + lr*0.6; // higher depth/lr → more overfit
+  const speed = lr * (1 + (depth-2)*0.18); // bigger lr & depth → faster initial decay
+
+  for (let i=0; i<=80; i++){
+    const round = (i/80) * n; // synth round axis
+    const t = round / Math.max(1,n);
+    // train: decreasing
+    const trainErr = 0.9 * Math.exp(-speed * round * 0.06) + 0.04;
+    // test: U-shape; minimum at ratio depending on overfit
+    const optRound = n * (0.45 - 0.3*overfitStrength);
+    const dist = Math.abs(round - Math.max(8, optRound));
+    const baseDecay = 0.85 * Math.exp(-speed * round * 0.05) + 0.18;
+    const overshoot = overfitStrength * 0.5 * Math.max(0,(round - optRound)/Math.max(1,n))**1.3;
+    const testErr = baseDecay + overshoot;
+
+    const px = xLeft + (i/80)*W;
+    const pyTrain = yBot - Math.min(0.95,Math.max(0.02,trainErr)) * H;
+    const pyTest  = yBot - Math.min(0.95,Math.max(0.02,testErr)) * H;
+    trainPts.push([px, pyTrain]);
+    testPts.push([px, pyTest]);
+  }
+
+  const toPath = (pts) => pts.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  document.getElementById('trainCurve').setAttribute('d', toPath(trainPts));
+  document.getElementById('testCurve').setAttribute('d', toPath(testPts));
+
+  // Find best test idx
+  let bestI = 0, bestY = -Infinity;
+  testPts.forEach((p,i)=>{ if (p[1] > bestY) { bestY = p[1]; bestI = i; } });
+  // Y is in pixels — higher pixel = lower error. So lowest error = max pixel y
+  const bestLine = document.getElementById('bestLine');
+  const bestLabel = document.getElementById('bestLabel');
+  bestLine.setAttribute('x1', testPts[bestI][0]);
+  bestLine.setAttribute('x2', testPts[bestI][0]);
+  bestLine.setAttribute('opacity', 0.7);
+  bestLabel.setAttribute('x', testPts[bestI][0]);
+  bestLabel.setAttribute('opacity', 1);
+
+  // last-point errors (in 0..1 space)
+  const lastTrain = (yBot - trainPts[trainPts.length-1][1]) / H;
+  const lastTest = (yBot - testPts[testPts.length-1][1]) / H;
+  document.getElementById('trainErrVal').textContent = lastTrain.toFixed(2);
+  document.getElementById('testErrVal').textContent = lastTest.toFixed(2);
+  const gap = (lastTest - lastTrain);
+  document.getElementById('gapVal').textContent = gap.toFixed(2);
+
+  // insight
+  const ins = document.getElementById('hpInsight');
+  if (gap > 0.25){
+    ins.className = 'insight red';
+    ins.innerHTML = '<strong>Overfitting.</strong> The orange test curve is well above the blue train curve. Try a smaller <code>max_depth</code> (≤4), smaller <code>learning_rate</code>, or enable early stopping.';
+  } else if (lastTest > 0.55){
+    ins.className = 'insight';
+    ins.innerHTML = '<strong>Underfitting.</strong> Both curves are still high and the model hasn\'t learned much yet. Increase <code>n_estimators</code>, increase <code>max_depth</code>, or raise <code>learning_rate</code> a touch.';
+  } else {
+    ins.className = 'insight green';
+    ins.innerHTML = '<strong>Healthy fit.</strong> Both curves decline together and plateau. The green dashed line shows the best round to stop at.';
+  }
+}
+document.getElementById('nEstSlider').addEventListener('input', drawHpCurves);
+document.getElementById('depthSlider').addEventListener('input', drawHpCurves);
+document.getElementById('hpLrSlider').addEventListener('input', drawHpCurves);
+drawHpCurves();
+
+/* ════════════════════════════════════════
+   PLAYGROUND C — K-FOLD CV
+   ════════════════════════════════════════ */
+const K_FOLDS = 5, N_ROWS = 10;
+const candidates = {
+  A: { name:'Candidate A', desc:'depth 3, η 0.1', scores:[0.82, 0.84, 0.81, 0.83, 0.82] },
+  B: { name:'Candidate B', desc:'depth 8, η 0.3', scores:[0.86, 0.78, 0.88, 0.74, 0.91] },
+  C: { name:'Candidate C', desc:'depth 5, η 0.05', scores:[0.84, 0.85, 0.83, 0.85, 0.84] }
+};
+
+function buildCvFolds(){
+  const wrap = document.getElementById('cvFolds');
+  wrap.innerHTML = '';
+  for (let f=0; f<K_FOLDS; f++){
+    const row = document.createElement('div');
+    row.className = 'cv-grid';
+    const lbl = document.createElement('div');
+    lbl.className = 'cv-label';
+    lbl.textContent = 'Fold '+(f+1);
+    row.appendChild(lbl);
+    const valStart = f*2, valEnd = valStart+1;
+    for (let i=0; i<N_ROWS; i++){
+      const cell = document.createElement('div');
+      const isVal = (i >= valStart && i <= valEnd);
+      cell.className = 'cv-cell ' + (isVal ? 'val' : 'train');
+      cell.textContent = isVal ? 'val' : 'train';
+      row.appendChild(cell);
+    }
+    const score = document.createElement('div');
+    score.className = 'cv-fold-score';
+    score.id = 'cvScore-'+f;
+    score.textContent = '—';
+    row.appendChild(score);
+    wrap.appendChild(row);
+  }
+}
+buildCvFolds();
+
+function runCV(key){
+  const cand = candidates[key];
+  // animate scores
+  cand.scores.forEach((s, i)=>{
+    setTimeout(()=>{
+      document.getElementById('cvScore-'+i).textContent = s.toFixed(2);
+    }, 250 * i);
+  });
+  setTimeout(()=>{
+    const mean = cand.scores.reduce((a,b)=>a+b,0)/cand.scores.length;
+    const variance = cand.scores.reduce((a,b)=>a+(b-mean)**2,0)/cand.scores.length;
+    const std = Math.sqrt(variance);
+    document.getElementById('cvMean').textContent = mean.toFixed(3);
+    document.getElementById('cvStd').textContent = std.toFixed(3);
+    const ins = document.getElementById('cvInsight');
+    if (key === 'A'){
+      ins.className = 'insight';
+      ins.innerHTML = '<strong>Candidate A: solid, but cautious.</strong> Mean '+mean.toFixed(2)+', spread ±'+std.toFixed(3)+'. Consistent across folds — could improve with slightly more capacity.';
+    } else if (key === 'B'){
+      ins.className = 'insight red';
+      ins.innerHTML = '<strong>Candidate B: deceptive.</strong> Mean '+mean.toFixed(2)+', but spread ±'+std.toFixed(3)+' is huge — fold 4 dropped to 0.74! High variance suggests overfitting in some folds. <em>Without CV, a single lucky split could have made this look like the winner.</em>';
+    } else {
+      ins.className = 'insight green';
+      ins.innerHTML = '<strong>Candidate C: the winner.</strong> Mean '+mean.toFixed(2)+', tiny spread ±'+std.toFixed(3)+'. High accuracy <em>and</em> stable — exactly what we want from cross-validation.';
+    }
+  }, 250 * cand.scores.length + 100);
+}
+
+/* ════════════════════════════════════════
+   PLAYGROUND D — XGB (level-wise) vs LGB (leaf-wise)
+   ════════════════════════════════════════ */
+// XGB level-wise: BFS expansion of full binary tree
+// LGB leaf-wise: greedy single best leaf split each time
+const xgbTreeNodes = []; // {x, y, level}
+const lgbTreeNodes = []; // {x, y, parent, gain}
+let xgbLevelCount = 0;
+let lgbStepCount = 0;
+const MAX_GROW_STEPS = 6;
+
+function growReset(){
+  xgbTreeNodes.length = 0;
+  lgbTreeNodes.length = 0;
+  xgbLevelCount = 0;
+  lgbStepCount = 0;
+  renderXgbTree();
+  renderLgbTree();
+  document.getElementById('xgbLevel').textContent = '0';
+  document.getElementById('lgbLevel').textContent = '0';
+  const ins = document.getElementById('growInsight');
+  ins.className = 'insight';
+  ins.innerHTML = '<strong>Step 0:</strong> Both trees start as a single root node. Click "Grow next step" to see how they diverge.';
+}
+
+function growStep(){
+  if (xgbLevelCount >= MAX_GROW_STEPS) return;
+  // XGB: add an entire level
+  if (xgbTreeNodes.length === 0){
+    xgbTreeNodes.push({x:160, y:50, level:0});
+  } else {
+    const prevLevel = xgbLevelCount;
+    const prevNodes = xgbTreeNodes.filter(n => n.level === prevLevel);
+    const newLevel = prevLevel + 1;
+    const dy = 35;
+    const spacing = 280 / Math.pow(2, newLevel);
+    prevNodes.forEach((p, idx)=>{
+      const leftX = p.x - spacing/2;
+      const rightX = p.x + spacing/2;
+      xgbTreeNodes.push({x:leftX, y:p.y+dy, level:newLevel, parent:prevNodes.indexOf(p) + '-' + prevLevel});
+      xgbTreeNodes.push({x:rightX, y:p.y+dy, level:newLevel, parent:prevNodes.indexOf(p) + '-' + prevLevel});
+    });
+  }
+  xgbLevelCount = (xgbTreeNodes.length === 1) ? 0 : Math.max(...xgbTreeNodes.map(n=>n.level));
+  document.getElementById('xgbLevel').textContent = xgbLevelCount;
+  renderXgbTree();
+
+  // LGB: split single "best" leaf — pick leaf with most negative score (deterministic pseudo-gain)
+  if (lgbTreeNodes.length === 0){
+    lgbTreeNodes.push({id:0, x:160, y:50, parent:null, depth:0, gain:1.0});
+  } else {
+    // find leaf with max gain that isn't yet split
+    const leaves = lgbTreeNodes.filter(n => !lgbTreeNodes.some(c => c.parent === n.id));
+    leaves.sort((a,b)=>b.gain - a.gain);
+    const target = leaves[0];
+    const dy = 35;
+    const dx = Math.max(20, 80 / (target.depth+1));
+    const nextId = lgbTreeNodes.length;
+    lgbTreeNodes.push({id:nextId,   x:target.x - dx, y:target.y+dy, parent:target.id, depth:target.depth+1, gain:target.gain*0.55 + (nextId%3)*0.05});
+    lgbTreeNodes.push({id:nextId+1, x:target.x + dx, y:target.y+dy, parent:target.id, depth:target.depth+1, gain:target.gain*0.62 - (nextId%2)*0.04});
+  }
+  lgbStepCount++;
+  document.getElementById('lgbLevel').textContent = lgbStepCount;
+  renderLgbTree();
+
+  // update insight
+  const ins = document.getElementById('growInsight');
+  if (xgbLevelCount === 1){
+    ins.className = 'insight';
+    ins.innerHTML = '<strong>Step 1:</strong> Both look identical — root just split. But the divergence starts next.';
+  } else if (xgbLevelCount === 2){
+    ins.className = 'insight';
+    ins.innerHTML = '<strong>Step 2:</strong> XGBoost dutifully split <em>all</em> nodes on the previous level. LightGBM split only the most useful leaf, so its tree is now lopsided — already digging deeper on one branch.';
+  } else if (xgbLevelCount <= 4){
+    ins.className = 'insight';
+    ins.innerHTML = '<strong>Step '+xgbLevelCount+':</strong> XGBoost\'s tree is balanced — predictable depth, stable behaviour. LightGBM keeps drilling down where the gain is highest — fewer nodes, but each one more "informative". This is why LightGBM trains faster.';
+  } else {
+    ins.className = 'insight green';
+    ins.innerHTML = '<strong>Step '+xgbLevelCount+':</strong> The trade-off is clear. XGBoost has '+xgbTreeNodes.length+' nodes, LightGBM has '+lgbTreeNodes.length+'. LightGBM reaches similar accuracy with fewer splits, but its skewed shape can overfit small datasets — that\'s why you cap <code>num_leaves</code>.';
+  }
+}
+
+function renderXgbTree(){
+  const svg = document.getElementById('xgbTree');
+  // wipe everything except the title text
+  Array.from(svg.querySelectorAll('.gn-rect, .gn-text, .gn-edge')).forEach(el => el.remove());
+  // edges first
+  xgbTreeNodes.forEach((n, idx) => {
+    if (n.level === 0) return;
+    // find parent: in the same column-half on previous level
+    const parentLevel = n.level - 1;
+    const parents = xgbTreeNodes.filter(p => p.level === parentLevel);
+    let bestP = parents[0], bestD = Infinity;
+    parents.forEach(p => {
+      const d = Math.abs(p.x - n.x);
+      if (d < bestD) { bestD = d; bestP = p; }
+    });
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('class','gn-edge');
+    line.setAttribute('x1', bestP.x);
+    line.setAttribute('y1', bestP.y + 8);
+    line.setAttribute('x2', n.x);
+    line.setAttribute('y2', n.y - 8);
+    svg.appendChild(line);
+  });
+  // nodes
+  xgbTreeNodes.forEach(n => {
+    const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    r.setAttribute('class', 'gn-rect');
+    const w = 28, h = 16;
+    r.setAttribute('x', n.x - w/2);
+    r.setAttribute('y', n.y - h/2);
+    r.setAttribute('width', w);
+    r.setAttribute('height', h);
+    r.setAttribute('rx', 4);
+    r.setAttribute('fill', n.level === xgbLevelCount && xgbLevelCount>0 ? '#F5943E' : '#E87A2E');
+    svg.appendChild(r);
+    const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    t.setAttribute('class', 'gn-text');
+    t.setAttribute('x', n.x);
+    t.setAttribute('y', n.y + 3);
+    t.textContent = 'L'+n.level;
+    svg.appendChild(t);
+  });
+}
+
+function renderLgbTree(){
+  const svg = document.getElementById('lgbTree');
+  Array.from(svg.querySelectorAll('.gn-rect, .gn-text, .gn-edge')).forEach(el => el.remove());
+  // edges
+  lgbTreeNodes.forEach(n => {
+    if (n.parent === null) return;
+    const p = lgbTreeNodes.find(pp => pp.id === n.parent);
+    if (!p) return;
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('class','gn-edge');
+    line.setAttribute('x1', p.x);
+    line.setAttribute('y1', p.y + 8);
+    line.setAttribute('x2', n.x);
+    line.setAttribute('y2', n.y - 8);
+    svg.appendChild(line);
+  });
+  // nodes
+  lgbTreeNodes.forEach(n => {
+    const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    r.setAttribute('class', 'gn-rect');
+    const w = 28, h = 16;
+    r.setAttribute('x', n.x - w/2);
+    r.setAttribute('y', n.y - h/2);
+    r.setAttribute('width', w);
+    r.setAttribute('height', h);
+    r.setAttribute('rx', 4);
+    r.setAttribute('fill', '#8E44AD');
+    svg.appendChild(r);
+    const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    t.setAttribute('class', 'gn-text');
+    t.setAttribute('x', n.x);
+    t.setAttribute('y', n.y + 3);
+    t.textContent = 'd'+n.depth;
+    svg.appendChild(t);
+  });
+}
+growReset();
+
+/* ════════════════════════════════════════
+   QUIZ
+   ════════════════════════════════════════ */
+function answer(btn, correct, num){
+  const parent = btn.parentElement;
+  Array.from(parent.children).forEach(c=>{
+    c.disabled = true;
+    c.style.cursor = 'default';
+  });
+  btn.classList.add(correct ? 'correct' : 'wrong');
+  document.getElementById('exp'+num).classList.add('show');
+}
+</script>
+</body>
+</html>

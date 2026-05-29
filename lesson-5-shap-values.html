@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 5: SHAP Values — MokshPath</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --orange:#E87A2E;--orange-dark:#D06A20;--orange-light:#F5943E;--orange-glow:rgba(232,122,46,0.12);
+  --navy:#2B2D42;--navy-dark:#1A1B2E;
+  --bg:#F3EDE7;--bg-card:#FFFFFF;--bg-light:#F9F5F0;
+  --text-primary:#2B2D42;--text-secondary:#6B6D7B;--text-muted:#9597A6;
+  --border:#E5DDD4;
+  --green:#4CAF50;--green-light:#E8F5E9;--red:#E74C3C;--blue:#3498DB;--purple:#8E44AD;
+  --shadow-sm:0 2px 8px rgba(43,45,66,0.06);
+  --shadow-md:0 8px 24px rgba(43,45,66,0.08);
+  --shadow-lg:0 16px 48px rgba(43,45,66,0.12);
+  --radius:14px;--radius-sm:8px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text-primary);-webkit-font-smoothing:antialiased;line-height:1.55}
+
+.nav{position:sticky;top:0;z-index:100;background:var(--bg-card);border-bottom:1px solid var(--border);padding:0 2rem;height:72px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow-sm)}
+.nav-brand{display:flex;align-items:center;gap:.7rem}
+.nav-brand-icon{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--orange),var(--orange-light));display:flex;align-items:center;justify-content:center;color:#fff;font-family:'DM Serif Display',serif;font-size:1.2rem}
+.nav-brand-text{display:flex;flex-direction:column;line-height:1.15}
+.nav-brand-name{font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--navy)}
+.nav-brand-name em{font-style:normal;color:var(--orange)}
+.nav-brand-tag{font-size:.62rem;color:var(--text-muted);font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.nav-right{display:flex;align-items:center;gap:1rem}
+.lesson-pill{padding:.4rem .9rem;border-radius:50px;background:var(--orange-glow);color:var(--orange);font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.nav-logo{width:56px;height:auto;filter:drop-shadow(0 4px 12px rgba(232,122,46,0.18));animation:float 3.5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+.hero{padding:4rem 2rem 2.5rem;background:linear-gradient(180deg,var(--bg) 0%,var(--bg-light) 100%)}
+.hero-inner{max-width:1080px;margin:0 auto;text-align:center}
+.hero-badge{display:inline-flex;align-items:center;gap:.5rem;padding:.45rem 1.1rem;border-radius:50px;background:var(--orange-glow);color:var(--orange);font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1.2rem}
+.hero-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--orange);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.hero h1{font-family:'DM Serif Display',serif;font-size:clamp(2rem,4.5vw,3.2rem);line-height:1.15;color:var(--navy);margin-bottom:1rem}
+.hero h1 em{font-style:normal;color:var(--orange)}
+.hero-sub{font-size:1.05rem;color:var(--text-secondary);line-height:1.7;max-width:680px;margin:0 auto 1.5rem}
+.audience-chips{display:flex;justify-content:center;gap:.4rem;flex-wrap:wrap;margin-top:1rem}
+.audience-chip{padding:.3rem .8rem;border-radius:50px;background:var(--bg-card);border:1px solid var(--border);font-size:.7rem;font-weight:600;color:var(--text-secondary)}
+.audience-chip svg{width:11px;height:11px;display:inline;vertical-align:middle;margin-right:.3rem;color:var(--green)}
+
+section{padding:3.5rem 2rem}
+.container{max-width:1080px;margin:0 auto}
+.section-header{text-align:center;margin-bottom:2.5rem}
+.section-label{display:inline-flex;align-items:center;gap:.4rem;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--orange);margin-bottom:.5rem}
+.section-label .num{width:22px;height:22px;border-radius:50%;background:var(--orange);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem}
+.section-title{font-family:'DM Serif Display',serif;font-size:clamp(1.5rem,3vw,2.1rem);color:var(--navy);line-height:1.25;margin-bottom:.5rem}
+.section-sub{font-size:.95rem;color:var(--text-secondary);line-height:1.7;max-width:620px;margin:0 auto}
+
+.analogy{background:var(--bg-card);border-radius:var(--radius);padding:2rem;border:1px solid var(--border);box-shadow:var(--shadow-sm);margin-top:1rem}
+.analogy-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:2rem;align-items:center}
+.analogy-text h3{font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--navy);margin-bottom:.6rem}
+.analogy-text p{font-size:.92rem;color:var(--text-secondary);line-height:1.7;margin-bottom:.8rem}
+.analogy-text .highlight{padding:.7rem .9rem;background:var(--orange-glow);border-radius:var(--radius-sm);border-left:3px solid var(--orange);font-size:.86rem;color:var(--text-primary);margin-top:.8rem}
+.analogy-text .highlight strong{color:var(--orange)}
+.analogy-text em{font-style:italic;color:var(--navy);font-weight:600}
+
+.playground{background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:2rem;margin-top:2rem;box-shadow:var(--shadow-sm)}
+.playground-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px dashed var(--border)}
+.playground-title{font-family:'DM Serif Display',serif;font-size:1.25rem;color:var(--navy);display:flex;align-items:center;gap:.5rem}
+.playground-title .pg-num{width:30px;height:30px;border-radius:50%;background:var(--orange);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.85rem;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800}
+.playground-task{font-size:.78rem;color:var(--orange);font-weight:600;padding:.4rem .8rem;background:var(--orange-glow);border-radius:50px}
+.playground-body{display:grid;grid-template-columns:1fr;gap:1.5rem}
+.playground-body.split{grid-template-columns:1.4fr 1fr}
+.playground-viz{background:var(--bg-light);border-radius:var(--radius-sm);padding:1rem;border:1px solid var(--border);min-height:320px}
+.playground-controls{display:flex;flex-direction:column;gap:1rem}
+
+input[type=range]{-webkit-appearance:none;width:100%;height:6px;background:var(--border);border-radius:50px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--orange);cursor:pointer;border:3px solid #fff;box-shadow:0 2px 6px rgba(232,122,46,0.4);transition:transform .15s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15)}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--orange);cursor:pointer;border:3px solid #fff;box-shadow:0 2px 6px rgba(232,122,46,0.4)}
+.control-row{display:flex;flex-direction:column;gap:.4rem}
+.control-label{font-size:.78rem;font-weight:600;color:var(--navy);display:flex;align-items:center;justify-content:space-between}
+.control-label .val{font-family:'DM Serif Display',serif;font-size:1rem;color:var(--orange)}
+
+.metric-row{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.4rem}
+.metric{flex:1;min-width:90px;padding:.6rem .7rem;background:var(--bg-light);border-radius:var(--radius-sm);text-align:center;border:1px solid var(--border)}
+.metric-label{font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.15rem}
+.metric-val{font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--navy)}
+.metric.highlight .metric-val{color:var(--orange)}
+.metric.good .metric-val{color:var(--green)}
+.metric.bad .metric-val{color:var(--red)}
+
+.btn{padding:.6rem 1.2rem;border-radius:10px;border:none;background:var(--orange);color:#fff;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem}
+.btn:hover{background:var(--orange-dark);transform:translateY(-1px);box-shadow:0 4px 14px rgba(232,122,46,0.3)}
+.btn:disabled{background:var(--text-muted);cursor:not-allowed;transform:none;box-shadow:none}
+.btn.secondary{background:transparent;color:var(--navy);border:1.5px solid var(--border)}
+.btn.secondary:hover{border-color:var(--orange);color:var(--orange);background:var(--bg-light);box-shadow:none}
+.btn-group{display:flex;gap:.5rem;flex-wrap:wrap}
+
+.insight{margin-top:1rem;padding:.9rem 1.1rem;background:linear-gradient(135deg,rgba(232,122,46,0.06),rgba(76,175,80,0.04));border-radius:var(--radius-sm);border-left:3px solid var(--orange);font-size:.85rem;line-height:1.6;color:var(--text-primary)}
+.insight strong{color:var(--orange)}
+.insight.green{border-left-color:var(--green)}
+.insight.green strong{color:var(--green)}
+.insight.red{border-left-color:var(--red)}
+.insight.red strong{color:var(--red)}
+
+/* Applicant selector */
+.applicant-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.6rem;margin-top:.4rem}
+.applicant-card{padding:.9rem .6rem;border-radius:var(--radius-sm);border:2px solid var(--border);background:var(--bg-light);cursor:pointer;transition:all .2s;text-align:center}
+.applicant-card:hover{border-color:var(--orange);background:#fff;transform:translateY(-2px)}
+.applicant-card.active{border-color:var(--orange);background:#fff;box-shadow:var(--shadow-md)}
+.applicant-avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto .5rem;font-family:'DM Serif Display',serif;font-size:1.1rem;color:#fff}
+.applicant-name{font-family:'DM Serif Display',serif;font-size:.95rem;color:var(--navy);margin-bottom:.15rem}
+.applicant-prob{font-size:.7rem;font-weight:700;letter-spacing:.04em}
+.applicant-prob.high{color:var(--green)}
+.applicant-prob.mid{color:var(--orange)}
+.applicant-prob.low{color:var(--red)}
+
+/* Feature table */
+.feature-table{display:grid;grid-template-columns:1.2fr 1fr;gap:.3rem .7rem;padding:.8rem 1rem;background:var(--bg-light);border-radius:var(--radius-sm);border:1px solid var(--border);margin-top:.6rem;font-size:.8rem}
+.feature-table .ft-key{color:var(--text-muted);font-weight:600}
+.feature-table .ft-val{color:var(--navy);font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+
+/* Force plot bars */
+.force-plot{margin-top:.4rem}
+.force-row{display:grid;grid-template-columns:130px 1fr 80px;gap:.6rem;align-items:center;padding:.35rem 0}
+.force-feature{font-size:.78rem;color:var(--navy);font-weight:600;text-align:right;line-height:1.25}
+.force-feature .ff-val{display:block;color:var(--text-muted);font-weight:500;font-size:.7rem}
+.force-bar-wrap{height:24px;position:relative;background:linear-gradient(90deg,rgba(231,76,60,0.05) 0%,rgba(231,76,60,0.05) 50%,rgba(76,175,80,0.05) 50%,rgba(76,175,80,0.05) 100%);border-radius:5px;overflow:hidden}
+.force-bar-zero{position:absolute;left:50%;top:0;bottom:0;width:1.5px;background:var(--text-muted);opacity:.4}
+.force-bar{position:absolute;top:3px;bottom:3px;border-radius:4px;display:flex;align-items:center;padding:0 .4rem;font-size:.7rem;font-weight:700;color:#fff;transition:width .5s ease, left .5s ease}
+.force-bar.pos{background:linear-gradient(90deg,#4CAF50,#66BB6A);justify-content:flex-end}
+.force-bar.neg{background:linear-gradient(90deg,#EF5350,#E74C3C);justify-content:flex-start}
+.force-val{font-size:.78rem;color:var(--navy);font-weight:700;font-variant-numeric:tabular-nums}
+.force-val.pos{color:var(--green)}
+.force-val.neg{color:var(--red)}
+
+.force-summary{margin-top:1rem;padding:.9rem 1rem;background:var(--bg-light);border-radius:var(--radius-sm);border:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem;text-align:center}
+.fs-cell{padding:.2rem}
+.fs-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.2rem}
+.fs-val{font-family:'DM Serif Display',serif;font-size:1.3rem;color:var(--navy)}
+.fs-arrow{font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--orange)}
+
+/* Global importance bars */
+.gi-list{display:flex;flex-direction:column;gap:.5rem;margin-top:.6rem}
+.gi-row{display:grid;grid-template-columns:130px 1fr 60px;gap:.6rem;align-items:center}
+.gi-name{font-size:.82rem;color:var(--navy);font-weight:600;text-align:right}
+.gi-bar-track{height:22px;background:var(--bg-light);border-radius:5px;overflow:hidden;border:1px solid var(--border)}
+.gi-bar{height:100%;background:linear-gradient(90deg,var(--orange-light),var(--orange));border-radius:5px;transition:width .6s ease;display:flex;align-items:center;padding:0 .5rem;color:#fff;font-size:.7rem;font-weight:700}
+.gi-val{font-size:.78rem;color:var(--navy);font-weight:700;font-variant-numeric:tabular-nums}
+
+/* Case study */
+.case-study{background:linear-gradient(135deg,var(--navy-dark),var(--navy));color:#fff;border-radius:var(--radius);padding:2.5rem;margin-top:2rem;position:relative;overflow:hidden}
+.case-study::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:rgba(232,122,46,0.12)}
+.case-study-content{position:relative;z-index:1}
+.case-tag{display:inline-block;padding:.3rem .8rem;border-radius:50px;background:rgba(255,255,255,0.1);color:var(--orange-light);font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem}
+.case-study h3{font-family:'DM Serif Display',serif;font-size:1.5rem;margin-bottom:.6rem}
+.case-study p{font-size:.92rem;color:rgba(255,255,255,0.78);line-height:1.7;margin-bottom:1rem}
+.persona-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1.5rem}
+.persona{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius-sm);padding:1.1rem}
+.persona-role{font-size:.65rem;font-weight:700;color:var(--orange-light);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem}
+.persona-text{font-size:.82rem;color:rgba(255,255,255,0.78);line-height:1.6}
+.persona-text strong{color:#fff}
+
+/* Quiz */
+.quiz{background:var(--bg-card);border-radius:var(--radius);padding:1.8rem;border:1px solid var(--border);margin-top:1.5rem}
+.quiz-q{font-size:.95rem;font-weight:600;color:var(--navy);margin-bottom:1rem;display:flex;gap:.5rem}
+.quiz-q .qnum{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--orange-glow);color:var(--orange);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800}
+.quiz-options{display:flex;flex-direction:column;gap:.5rem}
+.quiz-option{padding:.7rem .9rem;background:var(--bg-light);border:1.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;font-size:.85rem;color:var(--text-primary);transition:all .15s;text-align:left;font-family:inherit}
+.quiz-option:hover{border-color:var(--orange);background:#fff}
+.quiz-option.correct{background:var(--green-light);border-color:var(--green);color:#2E7D32}
+.quiz-option.wrong{background:rgba(231,76,60,0.08);border-color:var(--red);color:#C0392B}
+.quiz-explanation{margin-top:.8rem;padding:.7rem .9rem;background:var(--orange-glow);border-radius:var(--radius-sm);font-size:.82rem;line-height:1.6;color:var(--text-primary);display:none}
+.quiz-explanation.show{display:block}
+
+.takeaways{background:var(--bg-light);border-radius:var(--radius);padding:2rem;margin-top:2rem;border:1px solid var(--border)}
+.takeaways h3{font-family:'DM Serif Display',serif;font-size:1.3rem;color:var(--navy);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+.takeaways h3::before{content:'✦';color:var(--orange);font-size:1.5rem}
+.takeaway-list{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.takeaway{display:flex;gap:.6rem;align-items:flex-start;padding:.7rem;background:var(--bg-card);border-radius:var(--radius-sm);border:1px solid var(--border)}
+.takeaway-num{flex-shrink:0;width:24px;height:24px;border-radius:6px;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800}
+.takeaway-text{font-size:.82rem;line-height:1.55;color:var(--text-primary)}
+.takeaway-text strong{color:var(--orange)}
+
+footer{background:var(--bg-card);border-top:1px solid var(--border);padding:2rem;margin-top:2rem;text-align:center}
+.footer-inner{max-width:1080px;margin:0 auto}
+.footer-copy{font-size:.78rem;color:var(--text-muted)}
+.footer-nav{margin-top:1rem;display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap}
+.footer-nav a{font-size:.8rem;color:var(--text-secondary);text-decoration:none;transition:color .2s}
+.footer-nav a:hover{color:var(--orange)}
+
+.svg-canvas{width:100%;height:auto;display:block;border-radius:var(--radius-sm);background:#fff}
+
+@media(max-width:840px){
+  .nav{padding:0 1rem;height:64px}
+  .nav-brand-tag{display:none}
+  .nav-logo{width:42px}
+  section{padding:2.5rem 1.2rem}
+  .hero{padding:2.5rem 1.2rem 2rem}
+  .analogy-grid{grid-template-columns:1fr}
+  .playground{padding:1.3rem}
+  .playground-body.split{grid-template-columns:1fr}
+  .case-study{padding:1.6rem}
+  .persona-grid{grid-template-columns:1fr}
+  .takeaway-list{grid-template-columns:1fr}
+  .applicant-grid{grid-template-columns:repeat(2,1fr)}
+  .force-row{grid-template-columns:90px 1fr 60px}
+  .force-feature{font-size:.7rem}
+  .gi-row{grid-template-columns:90px 1fr 50px}
+  .force-summary{grid-template-columns:1fr;gap:.4rem}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <div class="nav-brand-icon">M</div>
+    <div class="nav-brand-text">
+      <span class="nav-brand-name">Moksh<em>Path</em></span>
+      <span class="nav-brand-tag">Learn by Doing</span>
+    </div>
+  </div>
+  <div class="nav-right">
+    <span class="lesson-pill">Lesson 5 of 5</span>
+    <img src="hero.svg" alt="MokshPath" class="nav-logo" onerror="this.style.display='none'">
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge"><span class="dot"></span> Explaining the black box</div>
+    <h1>SHAP <em>Values</em></h1>
+    <p class="hero-sub">
+      Powerful models — XGBoost, random forests, neural networks — are accurate but opaque. SHAP is the tool that lets you ask "why did the model predict <em>this</em>, for <em>this</em> person?" — and get an answer that's mathematically rigorous, not just a hunch.
+    </p>
+    <div class="audience-chips">
+      <span class="audience-chip"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Manager</span>
+      <span class="audience-chip"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Engineer</span>
+      <span class="audience-chip"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Social Scientist</span>
+      <span class="audience-chip"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Curious Beginner</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 1. INTUITION ═══ -->
+<section>
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">1</span> The Idea</div>
+      <h2 class="section-title">Sharing credit for the win</h2>
+      <p class="section-sub">Imagine a cricket team wins a match and the captain has ₹100,000 in prize money to split. Some players bowled brilliantly, some fielded well, some never touched the ball. How do you split it fairly? That exact question — from game theory — is what SHAP solves for model predictions.</p>
+    </div>
+
+    <div class="analogy">
+      <div class="analogy-grid">
+        <div class="analogy-text">
+          <h3>The team-bonus analogy</h3>
+          <p>A model's prediction for a single person is the "win." The features (income, credit score, age…) are the "players." SHAP asks: <em>how much did each feature contribute to moving this prediction away from the average?</em></p>
+          <p>The answer comes from a beautifully simple thought experiment. Imagine the player joining the team in every possible order. Sometimes the team is already strong — their contribution is small. Sometimes the team is weak — the same player is the difference-maker. Average across all orderings, and you get a <em>fair share</em>. That fair share is the <strong>Shapley value</strong>, invented by Lloyd Shapley in 1953 and adapted to ML as SHAP in 2017.</p>
+          <p>The result has one magical property: <em>the SHAP values for one row sum to exactly the prediction minus the baseline.</em> Nothing is fudged. No information leaks. The accounting always balances.</p>
+          <div class="highlight">
+            <strong>The promise:</strong> for any single prediction, SHAP gives you a complete, additive breakdown — "the model said 23% because of X, Y, Z." You can show this to a regulator, a customer, or a colleague and defend every number.
+          </div>
+        </div>
+        <div>
+          <svg class="svg-canvas" viewBox="0 0 340 320" style="background:var(--bg-light)">
+            <text x="170" y="20" font-family="DM Serif Display" font-size="13" fill="#2B2D42" text-anchor="middle">From average to this prediction</text>
+
+            <!-- Baseline -->
+            <line x1="50" y1="60" x2="290" y2="60" stroke="#9597A6" stroke-width="1" stroke-dasharray="3,3"/>
+            <text x="55" y="55" font-size="9" fill="#6B6D7B">Baseline (average prediction): 0.50</text>
+
+            <!-- Features pushing -->
+            <!-- Push up: green arrow -->
+            <g transform="translate(50,90)">
+              <rect x="0" y="0" width="240" height="22" rx="4" fill="rgba(76,175,80,0.18)" stroke="#4CAF50" stroke-width="1"/>
+              <text x="120" y="15" font-size="10" font-weight="700" fill="#2E7D32" text-anchor="middle">+ Credit score 785 → pushes UP +0.13</text>
+            </g>
+            <g transform="translate(50,118)">
+              <rect x="0" y="0" width="220" height="22" rx="4" fill="rgba(76,175,80,0.18)" stroke="#4CAF50" stroke-width="1"/>
+              <text x="110" y="15" font-size="10" font-weight="700" fill="#2E7D32" text-anchor="middle">+ Income ₹22L → pushes UP +0.12</text>
+            </g>
+            <g transform="translate(50,146)">
+              <rect x="0" y="0" width="120" height="22" rx="4" fill="rgba(76,175,80,0.12)" stroke="#4CAF50" stroke-width="1"/>
+              <text x="60" y="15" font-size="10" font-weight="700" fill="#2E7D32" text-anchor="middle">+ Employment +0.06</text>
+            </g>
+            <!-- Push down: red arrow -->
+            <g transform="translate(50,174)">
+              <rect x="160" y="0" width="80" height="22" rx="4" fill="rgba(231,76,60,0.12)" stroke="#E74C3C" stroke-width="1"/>
+              <text x="200" y="15" font-size="10" font-weight="700" fill="#C0392B" text-anchor="middle">− Loan size −0.04</text>
+            </g>
+
+            <!-- Sum arrow -->
+            <line x1="170" y1="210" x2="170" y2="240" stroke="#E87A2E" stroke-width="2" marker-end="url(#arrowO)"/>
+            <defs><marker id="arrowO" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#E87A2E"/></marker></defs>
+            <text x="180" y="228" font-size="9" fill="#E87A2E" font-weight="700">sum + baseline</text>
+
+            <!-- Final prediction -->
+            <rect x="100" y="250" width="140" height="50" rx="8" fill="#2B2D42"/>
+            <text x="170" y="270" font-size="9" font-weight="700" fill="#F5943E" text-anchor="middle">FINAL PREDICTION</text>
+            <text x="170" y="292" font-size="22" font-family="DM Serif Display" fill="#fff" text-anchor="middle">0.81</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 2. PLAYGROUND A — Force plot ═══ -->
+<section style="background:var(--bg-light)">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">2</span> Playground A</div>
+      <h2 class="section-title">Why did the model say <em style="color:var(--orange);font-style:normal">this</em>?</h2>
+      <p class="section-sub">A bank's loan model just predicted 23% approval for Maya. Why? The force plot below is the canonical SHAP visual: it shows every feature pushing the prediction up (green) or down (red) from the baseline. Click each applicant to see how the explanation changes — same model, totally different stories.</p>
+    </div>
+
+    <div class="playground">
+      <div class="playground-header">
+        <div class="playground-title"><span class="pg-num">A</span> Local force plot — pick an applicant</div>
+        <div class="playground-task">Click any face to see their explanation</div>
+      </div>
+
+      <div class="playground-body">
+        <div>
+          <div class="applicant-grid" id="appGrid">
+            <!-- filled by JS -->
+          </div>
+        </div>
+
+        <div class="playground-body split" style="margin-top:1rem">
+          <div class="playground-viz" style="padding:1.4rem">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.4rem">
+              <span style="font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--navy)" id="appTitle">Maya — Application #4781</span>
+              <span id="appOutcome" style="font-size:.78rem;font-weight:700;padding:.25rem .6rem;border-radius:50px;background:rgba(231,76,60,0.12);color:var(--red)">REJECTED</span>
+            </div>
+            <div class="force-plot" id="forcePlot">
+              <!-- bars injected -->
+            </div>
+            <div class="force-summary">
+              <div class="fs-cell"><div class="fs-label">Baseline E[f(x)]</div><div class="fs-val" id="fsBase">0.50</div></div>
+              <div class="fs-cell"><div class="fs-label">Sum of SHAPs</div><div class="fs-val" id="fsSum">−0.27</div></div>
+              <div class="fs-cell"><div class="fs-label">Prediction</div><div class="fs-val" id="fsPred" style="color:var(--red)">0.23</div></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="control-row">
+              <div class="control-label">Applicant profile</div>
+            </div>
+            <div class="feature-table" id="featTable">
+              <!-- rows injected -->
+            </div>
+
+            <div class="insight" id="insightA">
+              <strong>Maya's story.</strong> Two negative pulls dominate: her income of ₹5L (which sits well below the bank's typical approved-applicant income) and her employment tenure of just 1 year. Her age (26) gives a small positive nudge — younger applicants in this dataset tend to repay smaller loans, but it isn't enough to offset the income gap.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 3. PLAYGROUND B — Compare two side by side ═══ -->
+<section>
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">3</span> Playground B</div>
+      <h2 class="section-title">Same model, different reasons</h2>
+      <p class="section-sub">Compare any two applicants side by side. Notice how the <em>same</em> model produces wildly different feature attributions for different people — that's the power of <em>local</em> explanations. A single "feature importance" number can never tell you this.</p>
+    </div>
+
+    <div class="playground">
+      <div class="playground-header">
+        <div class="playground-title"><span class="pg-num">B</span> Two-applicant comparison</div>
+        <div class="playground-task">Pick a left and right applicant</div>
+      </div>
+
+      <div class="playground-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div>
+            <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.4rem">Left applicant</div>
+            <select id="leftSel" style="width:100%;padding:.6rem;border-radius:8px;border:1.5px solid var(--border);background:#fff;font-family:inherit;font-size:.9rem;color:var(--navy);font-weight:600">
+            </select>
+          </div>
+          <div>
+            <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.4rem">Right applicant</div>
+            <select id="rightSel" style="width:100%;padding:.6rem;border-radius:8px;border:1.5px solid var(--border);background:#fff;font-family:inherit;font-size:.9rem;color:var(--navy);font-weight:600">
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
+          <div class="playground-viz" id="leftPanel"></div>
+          <div class="playground-viz" id="rightPanel"></div>
+        </div>
+
+        <div class="insight" id="insightB">
+          <strong>What to look for.</strong> The same feature can appear with opposite signs for different people. That's not the model being inconsistent — it's the model being <em>contextual</em>. SHAP shows you the context.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 4. PLAYGROUND C — Global importance ═══ -->
+<section style="background:var(--bg-light)">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">4</span> Playground C</div>
+      <h2 class="section-title">From many stories to one ranking</h2>
+      <p class="section-sub">Zoom out. Compute SHAP for every row in the dataset, then average the <em>absolute</em> values per feature. The result is global feature importance — and unlike older importance metrics, it's grounded in the same per-prediction math, so the global and local views always agree.</p>
+    </div>
+
+    <div class="playground">
+      <div class="playground-header">
+        <div class="playground-title"><span class="pg-num">C</span> Global feature importance</div>
+        <div class="playground-task">Mean |SHAP| across 2,000 applicants</div>
+      </div>
+
+      <div class="playground-body split">
+        <div class="playground-viz" style="padding:1.4rem">
+          <div style="font-family:'DM Serif Display',serif;font-size:1.05rem;color:var(--navy);margin-bottom:.6rem">Average impact on prediction</div>
+          <div class="gi-list" id="giList">
+            <!-- filled by JS -->
+          </div>
+          <div style="margin-top:.9rem;font-size:.75rem;color:var(--text-muted);padding-top:.6rem;border-top:1px dashed var(--border)">
+            Bars show <em>mean |SHAP|</em>: average size of each feature's push, ignoring direction. A small bar can still flip a single prediction — it just doesn't do so on average.
+          </div>
+        </div>
+
+        <div>
+          <div class="control-row">
+            <div class="control-label">Sample size</div>
+          </div>
+          <div class="btn-group">
+            <button class="btn secondary" onclick="setSample(50)">50 rows</button>
+            <button class="btn secondary" onclick="setSample(500)">500 rows</button>
+            <button class="btn" onclick="setSample(2000)">2,000 rows</button>
+          </div>
+          <div class="insight green" id="insightC">
+            <strong>Stable ranking.</strong> With enough rows, the order barely changes — credit score and income are clearly the dominant drivers, with debt ratio close behind. Age contributes the least on average, but as Maya's case showed, it can matter for individuals.
+          </div>
+          <div style="margin-top:1rem;padding:.8rem 1rem;background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.78rem;color:var(--text-secondary);line-height:1.6">
+            <strong style="color:var(--navy)">Why mean |SHAP| beats traditional "importance":</strong> tree-based importance (gain, split count) reflects how the model was <em>built</em>. SHAP reflects how the model <em>behaves</em> on real data. Two models that score identically can have very different gain rankings — but they will have the same SHAP profile if they truly make the same predictions.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 5. PLAYGROUND D — Dependence plot ═══ -->
+<section>
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">5</span> Playground D</div>
+      <h2 class="section-title">Where the magic hides — interactions</h2>
+      <p class="section-sub">A dependence plot puts a feature's value on the x-axis and its SHAP value on the y-axis. Each dot is one applicant. The shape reveals whether the relationship is linear, has a threshold, or — most interestingly — depends on a <em>second</em> feature.</p>
+    </div>
+
+    <div class="playground">
+      <div class="playground-header">
+        <div class="playground-title"><span class="pg-num">D</span> SHAP dependence — Income</div>
+        <div class="playground-task">Colour reveals interaction with credit score</div>
+      </div>
+
+      <div class="playground-body split">
+        <div class="playground-viz" style="padding:1rem">
+          <svg class="svg-canvas" viewBox="0 0 480 340" id="depPlot">
+            <!-- axes etc drawn in JS -->
+          </svg>
+          <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:.4rem;padding:0 .5rem;font-size:.7rem;color:var(--text-muted);align-items:center">
+            <span>Credit score:</span>
+            <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#3498DB;margin-right:.2rem"></span>low
+            <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#9b59b6;margin-right:.2rem"></span>mid
+            <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#E87A2E"></span>high
+          </div>
+        </div>
+
+        <div>
+          <div class="insight" id="insightD">
+            <strong>Two patterns at once.</strong> First, income's effect is <em>non-linear</em>: SHAP rises steeply up to about ₹15L, then plateaus — extra income beyond that barely helps. Second, the colour gradient shows that the <em>same income</em> contributes differently for applicants with different credit scores. That's an <strong>interaction</strong> — a pattern that no single bar chart can show.
+          </div>
+
+          <div style="margin-top:1rem;padding:.9rem 1rem;background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.78rem;color:var(--text-secondary);line-height:1.6">
+            <strong style="color:var(--navy)">What you can do with this:</strong> set policy thresholds (e.g. "income above ₹15L is treated equally"), spot non-linearities a linear model would miss, or detect interactions you'd otherwise need an explicit cross-feature for.
+          </div>
+
+          <div style="margin-top:1rem;padding:.9rem 1rem;background:rgba(231,76,60,0.06);border:1px solid rgba(231,76,60,0.2);border-radius:var(--radius-sm);font-size:.78rem;color:var(--text-primary);line-height:1.6">
+            <strong style="color:var(--red)">A caution.</strong> If two features are highly correlated (e.g. income and savings balance), SHAP will split the credit between them somewhat arbitrarily. The <em>sum</em> of their SHAPs is still right, but reading either one in isolation can mislead.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 6. CASE STUDY ═══ -->
+<section style="background:var(--bg-light)">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">6</span> Case Study</div>
+      <h2 class="section-title">"Why was my loan rejected?"</h2>
+      <p class="section-sub">Three people, one decision, three different reasons to care about the answer.</p>
+    </div>
+
+    <div class="case-study">
+      <div class="case-study-content">
+        <span class="case-tag">FinTech · Loan Origination · Adverse-action explanations</span>
+        <h3>Maya gets the email</h3>
+        <p>A mid-sized lender uses an XGBoost model that scores loan applications. Maya, a 26-year-old marketing executive, applies for ₹18L. The model returns 0.23 — below the bank's 0.50 cutoff. The system auto-rejects her.</p>
+        <p>In many regulated jurisdictions, the bank is legally required to send Maya a letter explaining <em>why</em> — an "adverse action notice." Saying "the model said no" is not allowed. Before SHAP, banks would either fall back to a simpler (less accurate) model or hand-craft generic explanations. Now they generate the force plot from Section 2, translate it into plain language, and ship it.</p>
+        <p>What follows is the same SHAP output read by three different stakeholders, each with their own use for it.</p>
+
+        <div class="persona-grid">
+          <div class="persona">
+            <div class="persona-role">Maya (the applicant)</div>
+            <div class="persona-text">She gets a letter that says: <strong>"Your application was declined primarily because your income (₹5L) and your employment tenure (1 year) fell below typical thresholds for this loan amount."</strong> Crucially, it tells her what to <em>do</em>: wait two years for tenure, or apply for a smaller loan. SHAP turned an opaque "no" into actionable feedback.</div>
+          </div>
+          <div class="persona">
+            <div class="persona-role">Loan Officer</div>
+            <div class="persona-text">She sees the force plot directly. She can <strong>audit</strong> whether the rejection follows policy ("we don't lend to first-year employees over ₹15L") and decide whether to manually escalate Maya's case. Without SHAP she'd have only the score — and zero context.</div>
+          </div>
+          <div class="persona">
+            <div class="persona-role">Compliance &amp; Fairness Officer</div>
+            <div class="persona-text">Aggregating SHAP across thousands of applications, she <strong>checks that protected attributes</strong> (gender, religion) aren't driving rejections — directly or via proxies like name or pincode. SHAP is the audit trail that makes regulated ML deployment defensible.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 7. QUIZ ═══ -->
+<section>
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">7</span> Check yourself</div>
+      <h2 class="section-title">Three questions</h2>
+      <p class="section-sub">Click an answer to reveal whether it's right and why.</p>
+    </div>
+
+    <div class="quiz">
+      <div class="quiz-q"><span class="qnum">1</span> For a single applicant, you add up all the SHAP values across features. What does the sum equal?</div>
+      <div class="quiz-options">
+        <button class="quiz-option" onclick="answer(this,0,1)">The most important feature's contribution.</button>
+        <button class="quiz-option" onclick="answer(this,1,1)">The model's prediction minus the baseline (average prediction over the training set).</button>
+        <button class="quiz-option" onclick="answer(this,0,1)">The model's confidence interval.</button>
+        <button class="quiz-option" onclick="answer(this,0,1)">The training error.</button>
+      </div>
+      <div class="quiz-explanation" id="exp1"><strong>Yes.</strong> The defining mathematical guarantee of SHAP is <em>local accuracy</em>: sum of SHAPs + baseline = the exact prediction. This is what makes SHAP usable for audit and regulation — the explanation never "loses" or "invents" probability mass.</div>
+    </div>
+
+    <div class="quiz">
+      <div class="quiz-q"><span class="qnum">2</span> Income has the largest global SHAP importance. For Anjali, income's SHAP value is +0.05. What can you conclude?</div>
+      <div class="quiz-options">
+        <button class="quiz-option" onclick="answer(this,0,2)">Anjali's income is the most important factor in her individual prediction.</button>
+        <button class="quiz-option" onclick="answer(this,0,2)">Income is positively correlated with approval, so it must be the cause of her approval.</button>
+        <button class="quiz-option" onclick="answer(this,1,2)">Income pushed Anjali's prediction up by 0.05, but other features may have pushed it down by more — the rejection comes from the <em>net</em> push.</button>
+        <button class="quiz-option" onclick="answer(this,0,2)">The global ranking and the per-row SHAP must always agree on which feature dominates.</button>
+      </div>
+      <div class="quiz-explanation" id="exp2"><strong>Exactly.</strong> Global importance is an <em>average</em>. A feature that's strong on average can be a minor factor for any individual — and Anjali's high debt ratio (−0.18) is what actually drives her rejection. This is precisely why local explanations matter: averages obscure stories.</div>
+    </div>
+
+    <div class="quiz">
+      <div class="quiz-q"><span class="qnum">3</span> A bank shows SHAP plots in its adverse-action letters and concludes the system is fair. What's still missing?</div>
+      <div class="quiz-options">
+        <button class="quiz-option" onclick="answer(this,1,3)">SHAP explains the model's behaviour, not whether that behaviour is just. If the training data is biased, the explanations will faithfully describe a biased decision.</button>
+        <button class="quiz-option" onclick="answer(this,0,3)">SHAP only works for linear models, so the bank should switch to logistic regression.</button>
+        <button class="quiz-option" onclick="answer(this,0,3)">SHAP is too slow to use in production.</button>
+        <button class="quiz-option" onclick="answer(this,0,3)">SHAP cannot show feature names to non-technical users.</button>
+      </div>
+      <div class="quiz-explanation" id="exp3"><strong>Right.</strong> SHAP is a description of the model, not a verdict on its ethics. If the model learned to reject applicants from certain pincodes — and pincode correlates with caste or religion — SHAP will show "pincode contributed −0.12" without flagging the protected-attribute problem. <em>Interpretability is necessary for fairness; it isn't sufficient.</em></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 8. TAKEAWAYS ═══ -->
+<section style="background:var(--bg-light)">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">8</span> Recap</div>
+      <h2 class="section-title">The six things to remember</h2>
+    </div>
+
+    <div class="takeaways">
+      <h3>Pin these to your wall</h3>
+      <div class="takeaway-list">
+        <div class="takeaway"><span class="takeaway-num">1</span><span class="takeaway-text"><strong>SHAP is local first.</strong> It explains <em>one prediction at a time</em>, not the model as a whole. That's its superpower — and what generic feature-importance can't do.</span></div>
+        <div class="takeaway"><span class="takeaway-num">2</span><span class="takeaway-text"><strong>The accounting always balances.</strong> Sum of SHAP values + baseline = prediction. This guarantee comes from game theory and makes SHAP defensible in court, in regulation, and in adverse-action letters.</span></div>
+        <div class="takeaway"><span class="takeaway-num">3</span><span class="takeaway-text"><strong>Global importance is mean |SHAP|.</strong> Average the absolute SHAP value per feature across many rows. The result is grounded in the same math as the local view — they always agree.</span></div>
+        <div class="takeaway"><span class="takeaway-num">4</span><span class="takeaway-text"><strong>Dependence plots reveal what bars hide.</strong> Non-linearities, thresholds, and feature interactions show up as patterns in the dependence scatter — invisible in a single bar chart.</span></div>
+        <div class="takeaway"><span class="takeaway-num">5</span><span class="takeaway-text"><strong>Beware correlated features.</strong> SHAP will split credit between two highly correlated features somewhat arbitrarily. Read pairs of related features together, not in isolation.</span></div>
+        <div class="takeaway"><span class="takeaway-num">6</span><span class="takeaway-text"><strong>SHAP is not causality, and not fairness.</strong> It tells you what the model is doing. Whether the model <em>should</em> be doing that is a separate, human conversation that SHAP <em>enables</em> but does not <em>resolve</em>.</span></div>
+      </div>
+    </div>
+
+    <div style="margin-top:2rem;padding:1.5rem 2rem;background:linear-gradient(135deg,var(--orange-glow),rgba(76,175,80,0.06));border-radius:var(--radius);border:1px solid var(--border);text-align:center">
+      <div style="font-family:'DM Serif Display',serif;font-size:1.3rem;color:var(--navy);margin-bottom:.4rem">You finished the path.</div>
+      <p style="font-size:.92rem;color:var(--text-secondary);line-height:1.7;max-width:680px;margin:0 auto">
+        From a line through scatter points (Lesson 1) to trees that vote (Lesson 2), boosted ensembles that dominate Kaggle (Lesson 3), the metrics that reveal whether they actually work (Lesson 4), and finally the tool that explains <em>why</em> they work for any one person (Lesson 5) — you now have a complete, intuition-first picture of tabular ML.
+      </p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-copy">© 2026 MokshPath — Guided Path to True Learning</div>
+    <div class="footer-nav">
+      <a href="lesson-1-regression.html">Linear &amp; Logistic Regression</a>
+      <a href="lesson-2-trees-forest.html">Decision Trees &amp; Forest</a>
+      <a href="lesson-3-xgboost-lightgbm.html">XGBoost &amp; LightGBM</a>
+      <a href="lesson-4-model-evaluation.html">← Model Evaluation</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ════════════════════════════════════════
+   APPLICANT DATA — 5 profiles with SHAP values
+   ════════════════════════════════════════ */
+const BASELINE = 0.50;
+
+const applicants = [
+  {
+    id:'maya', name:'Maya', initial:'M', color:'#E74C3C',
+    appNo:'#4781', decision:'REJECTED',
+    features:[
+      {name:'Income',         val:'₹5L / yr',  shap:-0.12},
+      {name:'Credit score',   val:'640',       shap:-0.05},
+      {name:'Employment',     val:'1 yr',      shap:-0.08},
+      {name:'Debt ratio',     val:'35%',       shap:-0.04},
+      {name:'Loan amount',    val:'₹18L',      shap:-0.03},
+      {name:'Age',            val:'26',        shap:+0.05}
+    ],
+    insight:`<strong>Maya's story.</strong> Two negative pulls dominate: her income of ₹5L (well below the bank's typical approved-applicant income) and her employment tenure of just 1 year. Her age (26) gives a small positive nudge — younger applicants in this dataset tend to repay smaller loans — but it isn't enough to offset the income gap.`,
+    klass:'red'
+  },
+  {
+    id:'rohan', name:'Rohan', initial:'R', color:'#4CAF50',
+    appNo:'#4782', decision:'APPROVED',
+    features:[
+      {name:'Income',         val:'₹22L / yr', shap:+0.12},
+      {name:'Credit score',   val:'785',       shap:+0.13},
+      {name:'Employment',     val:'8 yr',      shap:+0.06},
+      {name:'Debt ratio',     val:'12%',       shap:+0.05},
+      {name:'Loan amount',    val:'₹15L',      shap:-0.04},
+      {name:'Age',            val:'34',        shap:-0.01}
+    ],
+    insight:`<strong>Rohan's story.</strong> Almost every feature pushes upward. A high credit score (785) and strong income lead the way, with stable employment and a healthy debt ratio reinforcing them. Only the loan amount (₹15L is large relative to his income) drags slightly, but the net is decisively positive.`,
+    klass:'green'
+  },
+  {
+    id:'priya', name:'Priya', initial:'P', color:'#F5943E',
+    appNo:'#4783', decision:'BORDERLINE',
+    features:[
+      {name:'Income',         val:'₹10L / yr', shap:+0.02},
+      {name:'Credit score',   val:'700',       shap:+0.03},
+      {name:'Employment',     val:'3 yr',      shap:-0.01},
+      {name:'Debt ratio',     val:'22%',       shap:+0.01},
+      {name:'Loan amount',    val:'₹12L',      shap:-0.02},
+      {name:'Age',            val:'29',        shap:-0.01}
+    ],
+    insight:`<strong>Priya's story.</strong> Every feature is close to the dataset average — no strong pull in either direction. The final prediction sits almost exactly at the baseline. This is the most ambiguous case for the model, and the one where human judgement adds the most value.`,
+    klass:''
+  },
+  {
+    id:'sharma', name:'Mr. Sharma', initial:'S', color:'#4CAF50',
+    appNo:'#4784', decision:'APPROVED',
+    features:[
+      {name:'Income',         val:'₹18L / yr', shap:+0.10},
+      {name:'Credit score',   val:'745',       shap:+0.09},
+      {name:'Employment',     val:'15 yr',     shap:+0.10},
+      {name:'Debt ratio',     val:'18%',       shap:+0.04},
+      {name:'Loan amount',    val:'₹25L',      shap:-0.08},
+      {name:'Age',            val:'48',        shap:-0.01}
+    ],
+    insight:`<strong>Mr. Sharma's story.</strong> A textbook strong applicant: high income, excellent credit, and 15 years of employment all push hard upward. The large loan amount (₹25L) creates the only meaningful drag — the model has learned that bigger loans require correspondingly better profiles, and applies that even when other signals are good.`,
+    klass:'green'
+  },
+  {
+    id:'anjali', name:'Anjali', initial:'A', color:'#E74C3C',
+    appNo:'#4785', decision:'REJECTED',
+    features:[
+      {name:'Income',         val:'₹14L / yr', shap:+0.05},
+      {name:'Credit score',   val:'680',       shap:-0.02},
+      {name:'Employment',     val:'4 yr',      shap:+0.01},
+      {name:'Debt ratio',     val:'52%',       shap:-0.18},
+      {name:'Loan amount',    val:'₹22L',      shap:-0.06},
+      {name:'Age',            val:'31',        shap:+0.01}
+    ],
+    insight:`<strong>Anjali's story.</strong> A fascinating case. Her income is decent, employment is fine, and her score is non-trivial — but her debt-to-income ratio of 52% is alone responsible for a −0.18 push, single-handedly turning the verdict. This is a feature that <em>looks</em> minor in the global ranking but can be decisive at the individual level.`,
+    klass:'red'
+  }
+];
+
+function predFor(a){ return BASELINE + a.features.reduce((s,f)=>s+f.shap,0); }
+
+/* ════════════════════════════════════════
+   PLAYGROUND A — Applicant grid + force plot
+   ════════════════════════════════════════ */
+let currentA = 0; // start with Maya
+
+function renderAppGrid(){
+  const g = document.getElementById('appGrid');
+  g.innerHTML = applicants.map((a,i)=>{
+    const p = predFor(a);
+    const klass = p>=0.65?'high':(p>=0.45?'mid':'low');
+    return `
+      <div class="applicant-card ${i===currentA?'active':''}" onclick="selectApp(${i})">
+        <div class="applicant-avatar" style="background:${a.color}">${a.initial}</div>
+        <div class="applicant-name">${a.name}</div>
+        <div class="applicant-prob ${klass}">${(p*100).toFixed(0)}% approval</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function selectApp(i){
+  currentA = i;
+  renderAppGrid();
+  renderForce();
+}
+
+function renderForce(){
+  const a = applicants[currentA];
+  const sum = a.features.reduce((s,f)=>s+f.shap,0);
+  const pred = BASELINE + sum;
+
+  // sort features by absolute SHAP descending
+  const sorted = [...a.features].sort((x,y)=>Math.abs(y.shap)-Math.abs(x.shap));
+
+  // scale: half-width corresponds to max |shap|
+  const maxAbs = Math.max(...a.features.map(f=>Math.abs(f.shap)), 0.10);
+
+  document.getElementById('appTitle').textContent = `${a.name} — Application ${a.appNo}`;
+  const out = document.getElementById('appOutcome');
+  out.textContent = a.decision;
+  if(a.decision==='REJECTED'){
+    out.style.background = 'rgba(231,76,60,0.12)'; out.style.color = 'var(--red)';
+  } else if(a.decision==='APPROVED'){
+    out.style.background = 'rgba(76,175,80,0.14)'; out.style.color = 'var(--green)';
+  } else {
+    out.style.background = 'rgba(232,122,46,0.14)'; out.style.color = 'var(--orange)';
+  }
+
+  document.getElementById('forcePlot').innerHTML = sorted.map(f=>{
+    const pct = (Math.abs(f.shap) / maxAbs) * 48; // half-bar max width 48%
+    const isPos = f.shap>=0;
+    const barStyle = isPos
+      ? `left:50%;width:${pct}%`
+      : `left:${50-pct}%;width:${pct}%`;
+    const sign = isPos?'+':'−';
+    return `
+      <div class="force-row">
+        <div class="force-feature">${f.name}<span class="ff-val">${f.val}</span></div>
+        <div class="force-bar-wrap">
+          <div class="force-bar-zero"></div>
+          <div class="force-bar ${isPos?'pos':'neg'}" style="${barStyle}">${Math.abs(f.shap).toFixed(2)}</div>
+        </div>
+        <div class="force-val ${isPos?'pos':'neg'}">${sign}${Math.abs(f.shap).toFixed(2)}</div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('fsBase').textContent = BASELINE.toFixed(2);
+  document.getElementById('fsSum').textContent  = (sum>=0?'+':'−') + Math.abs(sum).toFixed(2);
+  const fsPred = document.getElementById('fsPred');
+  fsPred.textContent = pred.toFixed(2);
+  fsPred.style.color = pred>=0.50?'var(--green)':'var(--red)';
+
+  document.getElementById('featTable').innerHTML = a.features.map(f=>`
+    <div class="ft-key">${f.name}</div><div class="ft-val">${f.val}</div>
+  `).join('');
+
+  const ins = document.getElementById('insightA');
+  ins.className = 'insight' + (a.klass?' '+a.klass:'');
+  ins.innerHTML = a.insight;
+}
+
+renderAppGrid();
+renderForce();
+
+/* ════════════════════════════════════════
+   PLAYGROUND B — Two-applicant compare
+   ════════════════════════════════════════ */
+let leftIdx = 0, rightIdx = 1;
+
+function fillSel(id, sel){
+  const el = document.getElementById(id);
+  el.innerHTML = applicants.map((a,i)=>{
+    const p = predFor(a);
+    return `<option value="${i}" ${i===sel?'selected':''}>${a.name} — ${(p*100).toFixed(0)}% approval</option>`;
+  }).join('');
+  el.onchange = ()=>{ if(id==='leftSel') leftIdx = +el.value; else rightIdx = +el.value; renderCompare(); };
+}
+
+function miniForce(a){
+  const sum = a.features.reduce((s,f)=>s+f.shap,0);
+  const pred = BASELINE + sum;
+  const sorted = [...a.features].sort((x,y)=>Math.abs(y.shap)-Math.abs(x.shap));
+  const maxAbs = Math.max(...a.features.map(f=>Math.abs(f.shap)), 0.10);
+
+  let decisionColor;
+  if(a.decision==='APPROVED') decisionColor = '#4CAF50';
+  else if(a.decision==='REJECTED') decisionColor = '#E74C3C';
+  else decisionColor = '#E87A2E';
+
+  let rowsHtml = sorted.map(f=>{
+    const pct = (Math.abs(f.shap) / maxAbs) * 44;
+    const isPos = f.shap>=0;
+    const barStyle = isPos ? `left:50%;width:${pct}%` : `left:${50-pct}%;width:${pct}%`;
+    return `
+      <div style="display:grid;grid-template-columns:75px 1fr 35px;gap:.4rem;align-items:center;padding:.2rem 0">
+        <div style="font-size:.7rem;color:var(--navy);font-weight:600;text-align:right">${f.name}</div>
+        <div style="height:18px;position:relative;background:#FAF5EF;border-radius:4px;overflow:hidden">
+          <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--text-muted);opacity:.4"></div>
+          <div style="position:absolute;top:2px;bottom:2px;border-radius:3px;background:${isPos?'#4CAF50':'#E74C3C'};${barStyle}"></div>
+        </div>
+        <div style="font-size:.7rem;font-weight:700;font-variant-numeric:tabular-nums;color:${isPos?'#2E7D32':'#C0392B'}">${isPos?'+':'−'}${Math.abs(f.shap).toFixed(2)}</div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <div style="width:32px;height:32px;border-radius:50%;background:${a.color};display:flex;align-items:center;justify-content:center;color:#fff;font-family:'DM Serif Display',serif;font-size:.95rem">${a.initial}</div>
+        <div>
+          <div style="font-family:'DM Serif Display',serif;font-size:.95rem;color:var(--navy)">${a.name}</div>
+          <div style="font-size:.65rem;color:var(--text-muted)">${a.appNo}</div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:'DM Serif Display',serif;font-size:1.4rem;color:${decisionColor}">${pred.toFixed(2)}</div>
+        <div style="font-size:.6rem;font-weight:700;letter-spacing:.06em;color:${decisionColor}">${a.decision}</div>
+      </div>
+    </div>
+    ${rowsHtml}
+  `;
+}
+
+function renderCompare(){
+  document.getElementById('leftPanel').innerHTML  = miniForce(applicants[leftIdx]);
+  document.getElementById('rightPanel').innerHTML = miniForce(applicants[rightIdx]);
+
+  // dynamic insight
+  const L = applicants[leftIdx], R = applicants[rightIdx];
+  const insight = document.getElementById('insightB');
+  if(leftIdx===rightIdx){
+    insight.className = 'insight';
+    insight.innerHTML = `<strong>Pick two different applicants</strong> to see how SHAP explanations diverge.`;
+    return;
+  }
+  // find a feature where signs flip
+  let flipFeat = null;
+  for(let i=0;i<L.features.length;i++){
+    if(Math.sign(L.features[i].shap) !== Math.sign(R.features[i].shap) && Math.abs(L.features[i].shap)>0.03 && Math.abs(R.features[i].shap)>0.03){
+      flipFeat = L.features[i].name;
+      break;
+    }
+  }
+  if(flipFeat){
+    insight.className = 'insight';
+    insight.innerHTML = `<strong>Notice "${flipFeat}":</strong> it pushes ${L.name}'s prediction one way and ${R.name}'s the other. Same feature, same model — opposite effects. That's because the contribution depends on how this feature's value compares to typical values <em>given the other features</em>.`;
+  } else {
+    insight.className = 'insight green';
+    insight.innerHTML = `<strong>${L.name} vs ${R.name}.</strong> Compare the magnitudes — the same feature can be a dominant driver for one person and barely register for another, even when the signs agree.`;
+  }
+}
+
+fillSel('leftSel', leftIdx);
+fillSel('rightSel', rightIdx);
+renderCompare();
+
+/* ════════════════════════════════════════
+   PLAYGROUND C — Global importance
+   ════════════════════════════════════════ */
+// Pre-computed global importance for three sample sizes (with noise at small N)
+const globalImp = {
+  50:   {Income:0.082, 'Credit score':0.071, 'Debt ratio':0.058, Employment:0.063, 'Loan amount':0.041, Age:0.024},
+  500:  {Income:0.087, 'Credit score':0.080, 'Debt ratio':0.068, Employment:0.052, 'Loan amount':0.045, Age:0.019},
+  2000: {Income:0.088, 'Credit score':0.082, 'Debt ratio':0.070, Employment:0.052, 'Loan amount':0.046, Age:0.018}
+};
+let currentSample = 2000;
+
+function renderGI(){
+  const imp = globalImp[currentSample];
+  const entries = Object.entries(imp).sort((a,b)=>b[1]-a[1]);
+  const max = entries[0][1];
+  document.getElementById('giList').innerHTML = entries.map(([k,v])=>{
+    const pct = (v/max)*100;
+    return `
+      <div class="gi-row">
+        <div class="gi-name">${k}</div>
+        <div class="gi-bar-track"><div class="gi-bar" style="width:${pct}%">${v.toFixed(3)}</div></div>
+        <div class="gi-val">${v.toFixed(3)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function setSample(n){
+  currentSample = n;
+  // update button styles
+  document.querySelectorAll('.btn-group .btn').forEach(b=>{
+    b.classList.add('secondary');
+  });
+  // active one (the matching button)
+  document.querySelectorAll('.btn-group .btn').forEach(b=>{
+    if(b.textContent.startsWith(String(n))) b.classList.remove('secondary');
+  });
+
+  const ins = document.getElementById('insightC');
+  if(n===50){
+    ins.className = 'insight red';
+    ins.innerHTML = `<strong>Small sample, noisy ranking.</strong> With only 50 rows, "Employment" briefly overtakes "Debt ratio" — that's sampling noise, not a real shift. Always check that your global importance is computed over enough data to be stable.`;
+  } else if(n===500){
+    ins.className = 'insight';
+    ins.innerHTML = `<strong>Mostly settled.</strong> The top three (Income, Credit score, Debt ratio) are locked in. Lower-importance features still wobble slightly between runs.`;
+  } else {
+    ins.className = 'insight green';
+    ins.innerHTML = `<strong>Stable ranking.</strong> With 2,000 rows, the order barely changes — credit score and income are clearly the dominant drivers, with debt ratio close behind. Age contributes the least on average, but as Maya's case showed, it can still matter for individuals.`;
+  }
+  renderGI();
+}
+setSample(2000);
+
+/* ════════════════════════════════════════
+   PLAYGROUND D — Dependence plot (Income vs SHAP_Income, coloured by credit)
+   ════════════════════════════════════════ */
+function buildDep(){
+  // Generate 60 deterministic points
+  // x = income in lakhs (1 to 30), y = SHAP for income, colour = credit score bucket
+  const pts = [];
+  let seed = 17;
+  function rng(){ seed = (seed*1664525 + 1013904223) % 2**32; return (seed>>>0)/2**32; }
+
+  for(let i=0;i<60;i++){
+    const inc = 1 + rng()*29;             // ₹1L to ₹30L
+    const credit = 550 + rng()*280;        // 550-830
+    // SHAP shape: rises steeply 0..15, then plateau. Interaction: low credit muffles boost
+    let baseShap;
+    if(inc < 7) baseShap = -0.18 + inc*0.022;        // -0.18 → -0.026 at inc=7
+    else if(inc < 15) baseShap = -0.04 + (inc-7)*0.025; // -0.04 → 0.16 at inc=15
+    else baseShap = 0.16 - (inc-15)*0.001;            // gentle plateau
+    // credit interaction: low credit dampens positive contribution
+    const creditAdj = (credit - 690) / 200 * 0.05;
+    let shap = baseShap + creditAdj + (rng()-0.5)*0.02;
+    pts.push({inc, credit, shap});
+  }
+  return pts;
+}
+
+function renderDep(){
+  const svg = document.getElementById('depPlot');
+  const pts = buildDep();
+
+  // axes
+  const padL = 50, padR = 20, padT = 25, padB = 40;
+  const W = 480, H = 340;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+
+  const xMin = 0, xMax = 32;
+  const yMin = -0.22, yMax = 0.22;
+  const sx = v => padL + (v - xMin)/(xMax - xMin) * plotW;
+  const sy = v => padT + (1 - (v - yMin)/(yMax - yMin)) * plotH;
+
+  function creditColor(c){
+    if(c < 650) return '#3498DB';
+    if(c < 740) return '#9b59b6';
+    return '#E87A2E';
+  }
+
+  let html = '';
+
+  // Title
+  html += `<text x="${W/2}" y="16" font-family="DM Serif Display" font-size="12" fill="#2B2D42" text-anchor="middle">SHAP value for "Income" vs Income</text>`;
+
+  // gridlines
+  for(let v = -0.2; v <= 0.21; v += 0.1){
+    html += `<line x1="${padL}" y1="${sy(v)}" x2="${W-padR}" y2="${sy(v)}" stroke="#E5DDD4" stroke-width="${Math.abs(v)<0.01?1.4:0.7}" ${Math.abs(v)<0.01?'':'stroke-dasharray="2,3"'}/>`;
+  }
+  // y-axis ticks
+  for(let v = -0.2; v <= 0.21; v += 0.1){
+    html += `<text x="${padL-7}" y="${sy(v)+3}" font-size="9" fill="#6B6D7B" text-anchor="end">${v.toFixed(1)}</text>`;
+  }
+  // x-axis ticks
+  for(let v = 0; v <= 30; v += 5){
+    html += `<line x1="${sx(v)}" y1="${padT+plotH}" x2="${sx(v)}" y2="${padT+plotH+4}" stroke="#9597A6" stroke-width="0.8"/>`;
+    html += `<text x="${sx(v)}" y="${padT+plotH+16}" font-size="9" fill="#6B6D7B" text-anchor="middle">₹${v}L</text>`;
+  }
+
+  // axis labels
+  html += `<text x="${padL+plotW/2}" y="${H-8}" font-size="10" fill="#2B2D42" font-weight="600" text-anchor="middle">Income (₹ lakhs / year)</text>`;
+  html += `<text x="${padL-30}" y="${padT+plotH/2}" font-size="10" fill="#2B2D42" font-weight="600" text-anchor="middle" transform="rotate(-90 ${padL-30} ${padT+plotH/2})">SHAP value for Income</text>`;
+
+  // dots
+  for(const p of pts){
+    html += `<circle cx="${sx(p.inc).toFixed(1)}" cy="${sy(p.shap).toFixed(1)}" r="5" fill="${creditColor(p.credit)}" fill-opacity="0.78" stroke="#fff" stroke-width="1"/>`;
+  }
+
+  // dashed annotation lines: knee around ₹15L
+  html += `<line x1="${sx(15)}" y1="${padT}" x2="${sx(15)}" y2="${padT+plotH}" stroke="#E87A2E" stroke-width="1" stroke-dasharray="4,4" opacity="0.6"/>`;
+  html += `<text x="${sx(15)+5}" y="${padT+12}" font-size="9" fill="#E87A2E" font-weight="700">knee ≈ ₹15L</text>`;
+
+  svg.innerHTML = html;
+}
+renderDep();
+
+/* ════════════════════════════════════════
+   QUIZ
+   ════════════════════════════════════════ */
+function answer(btn, correct, num){
+  const opts = btn.parentElement.querySelectorAll('.quiz-option');
+  opts.forEach(o => o.disabled = true);
+  if(correct){
+    btn.classList.add('correct');
+  } else {
+    btn.classList.add('wrong');
+    // highlight correct one
+    opts.forEach(o => {
+      if(o.getAttribute('onclick').includes(',1,')) o.classList.add('correct');
+    });
+  }
+  document.getElementById('exp'+num).classList.add('show');
+}
+</script>
+
+</body>
+</html>

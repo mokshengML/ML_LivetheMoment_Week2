@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 2: Decision Trees & Random Forest — MokshPath</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --orange:#E87A2E;--orange-dark:#D06A20;--orange-light:#F5943E;--orange-glow:rgba(232,122,46,0.12);
+  --navy:#2B2D42;--navy-dark:#1A1B2E;
+  --bg:#F3EDE7;--bg-card:#FFFFFF;--bg-light:#F9F5F0;
+  --text-primary:#2B2D42;--text-secondary:#6B6D7B;--text-muted:#9597A6;
+  --border:#E5DDD4;
+  --green:#4CAF50;--green-light:#E8F5E9;--red:#E74C3C;--blue:#3498DB;--purple:#8E44AD;
+  --shadow-sm:0 2px 8px rgba(43,45,66,0.06);
+  --shadow-md:0 8px 24px rgba(43,45,66,0.08);
+  --shadow-lg:0 16px 48px rgba(43,45,66,0.12);
+  --radius:14px;--radius-sm:8px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text-primary);-webkit-font-smoothing:antialiased;line-height:1.55}
+
+/* ─── NAV ─── */
+.nav{position:sticky;top:0;z-index:100;background:var(--bg-card);border-bottom:1px solid var(--border);padding:0 2rem;height:72px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow-sm)}
+.nav-brand{display:flex;align-items:center;gap:.7rem}
+.nav-brand-icon{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--orange),var(--orange-light));display:flex;align-items:center;justify-content:center;color:#fff;font-family:'DM Serif Display',serif;font-size:1.2rem}
+.nav-brand-text{display:flex;flex-direction:column;line-height:1.15}
+.nav-brand-name{font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--navy)}
+.nav-brand-name em{font-style:normal;color:var(--orange)}
+.nav-brand-tag{font-size:.62rem;color:var(--text-muted);font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.nav-right{display:flex;align-items:center;gap:1rem}
+.lesson-pill{padding:.4rem .9rem;border-radius:50px;background:var(--orange-glow);color:var(--orange);font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.nav-logo{width:56px;height:auto;filter:drop-shadow(0 4px 12px rgba(232,122,46,0.18));animation:float 3.5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+/* ─── HERO ─── */
+.hero{padding:4rem 2rem 2.5rem;background:linear-gradient(180deg,var(--bg) 0%,var(--bg-light) 100%)}
+.hero-inner{max-width:1080px;margin:0 auto;text-align:center}
+.hero-badge{display:inline-flex;align-items:center;gap:.5rem;padding:.45rem 1.1rem;border-radius:50px;background:var(--orange-glow);color:var(--orange);font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1.2rem}
+.hero-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--orange);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.hero h1{font-family:'DM Serif Display',serif;font-size:clamp(2rem,4.5vw,3.2rem);line-height:1.15;color:var(--navy);margin-bottom:1rem}
+.hero h1 em{font-style:normal;color:var(--orange)}
+.hero-sub{font-size:1.05rem;color:var(--text-secondary);line-height:1.7;max-width:680px;margin:0 auto 1.5rem}
+.audience-chips{display:flex;justify-content:center;gap:.4rem;flex-wrap:wrap;margin-top:1rem}
+.audience-chip{padding:.3rem .8rem;border-radius:50px;background:var(--bg-card);border:1px solid var(--border);font-size:.7rem;font-weight:600;color:var(--text-secondary)}
+.audience-chip svg{width:11px;height:11px;display:inline;vertical-align:middle;margin-right:.3rem;color:var(--green)}
+
+/* ─── SECTIONS ─── */
+section{padding:3.5rem 2rem}
+.container{max-width:1080px;margin:0 auto}
+.section-header{text-align:center;margin-bottom:2.5rem}
+.section-label{display:inline-flex;align-items:center;gap:.4rem;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--orange);margin-bottom:.5rem}
+.section-label .num{width:22px;height:22px;border-radius:50%;background:var(--orange);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem}
+.section-title{font-family:'DM Serif Display',serif;font-size:clamp(1.5rem,3vw,2.1rem);color:var(--navy);line-height:1.25;margin-bottom:.5rem}
+.section-sub{font-size:.95rem;color:var(--text-secondary);line-height:1.7;max-width:620px;margin:0 auto}
+
+/* ─── ANALOGY CARD ─── */
+.analogy{background:var(--bg-card);border-radius:var(--radius);padding:2rem;border:1px solid var(--border);box-shadow:var(--shadow-sm);margin-top:1rem}
+.analogy-grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:center}
+.analogy-text h3{font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--navy);margin-bottom:.6rem}
+.analogy-text p{font-size:.92rem;color:var(--text-secondary);line-height:1.7;margin-bottom:.8rem}
+.analogy-text .highlight{padding:.7rem .9rem;background:var(--orange-glow);border-radius:var(--radius-sm);border-left:3px solid var(--orange);font-size:.86rem;color:var(--text-primary);margin-top:.8rem}
+.analogy-text .highlight strong{color:var(--orange)}
+
+/* ─── PLAYGROUND ─── */
+.playground{background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:2rem;margin-top:2rem;box-shadow:var(--shadow-sm)}
+.playground-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px dashed var(--border)}
+.playground-title{font-family:'DM Serif Display',serif;font-size:1.25rem;color:var(--navy);display:flex;align-items:center;gap:.5rem}
+.playground-title .pg-num{width:30px;height:30px;border-radius:50%;background:var(--orange);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.85rem;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800}
+.playground-task{font-size:.78rem;color:var(--orange);font-weight:600;padding:.4rem .8rem;background:var(--orange-glow);border-radius:50px}
+.playground-body{display:grid;grid-template-columns:1fr;gap:1.5rem}
+.playground-body.split{grid-template-columns:1.4fr 1fr}
+.playground-viz{background:var(--bg-light);border-radius:var(--radius-sm);padding:1rem;border:1px solid var(--border);min-height:320px}
+.playground-controls{display:flex;flex-direction:column;gap:1rem}
+
+input[type=range]{-webkit-appearance:none;width:100%;height:6px;background:var(--border);border-radius:50px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--orange);cursor:pointer;border:3px solid #fff;box-shadow:0 2px 6px rgba(232,122,46,0.4);transition:transform .15s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15)}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--orange);cursor:pointer;border:3px solid #fff;box-shadow:0 2px 6px rgba(232,122,46,0.4)}
+.control-row{display:flex;flex-direction:column;gap:.4rem}
+.control-label{font-size:.78rem;font-weight:600;color:var(--navy);display:flex;align-items:center;justify-content:space-between}
+.control-label .val{font-family:'DM Serif Display',serif;font-size:1rem;color:var(--orange)}
+
+.metric-row{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.4rem}
+.metric{flex:1;min-width:90px;padding:.6rem .7rem;background:var(--bg-light);border-radius:var(--radius-sm);text-align:center;border:1px solid var(--border)}
+.metric-label{font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.15rem}
+.metric-val{font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--navy)}
+.metric.highlight .metric-val{color:var(--orange)}
+.metric.good .metric-val{color:var(--green)}
+.metric.bad .metric-val{color:var(--red)}
+
+.btn{padding:.6rem 1.2rem;border-radius:10px;border:none;background:var(--orange);color:#fff;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem}
+.btn:hover{background:var(--orange-dark);transform:translateY(-1px);box-shadow:0 4px 14px rgba(232,122,46,0.3)}
+.btn:disabled{background:var(--text-muted);cursor:not-allowed;transform:none;box-shadow:none}
+.btn.secondary{background:transparent;color:var(--navy);border:1.5px solid var(--border)}
+.btn.secondary:hover{border-color:var(--orange);color:var(--orange);background:var(--bg-light);box-shadow:none}
+.btn-group{display:flex;gap:.5rem;flex-wrap:wrap}
+
+.split-options{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.3rem}
+.split-btn{padding:.6rem .7rem;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--bg-light);cursor:pointer;font-family:inherit;font-size:.78rem;font-weight:600;color:var(--text-primary);text-align:left;transition:all .15s;display:flex;flex-direction:column;gap:.15rem}
+.split-btn:hover{border-color:var(--orange);background:#fff}
+.split-btn .feat-name{color:var(--navy)}
+.split-btn .feat-gain{font-size:.66rem;color:var(--text-muted);font-weight:500}
+.split-btn .best-tag{font-size:.55rem;font-weight:800;color:var(--green);text-transform:uppercase;letter-spacing:.06em}
+
+.insight{margin-top:1rem;padding:.9rem 1.1rem;background:linear-gradient(135deg,rgba(232,122,46,0.06),rgba(76,175,80,0.04));border-radius:var(--radius-sm);border-left:3px solid var(--orange);font-size:.85rem;line-height:1.6;color:var(--text-primary)}
+.insight strong{color:var(--orange)}
+.insight.green{border-left-color:var(--green)}
+.insight.green strong{color:var(--green)}
+
+/* ─── TREE NODES ─── */
+.tree-node{cursor:default}
+.tree-node-rect{transition:all .3s;rx:8;ry:8}
+.tree-leaf{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;text-anchor:middle}
+.tree-q{font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;font-weight:600;fill:#fff;text-anchor:middle}
+.tree-edge{stroke:var(--text-muted);stroke-width:2;fill:none}
+.tree-edge-label{font-size:9px;fill:var(--text-secondary);font-weight:600;text-anchor:middle}
+
+/* ─── FOREST CARDS ─── */
+.forest-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.6rem;margin-bottom:1rem}
+.tree-card{background:var(--bg-light);border:2px solid var(--border);border-radius:var(--radius-sm);padding:.8rem .5rem;text-align:center;cursor:pointer;transition:all .2s}
+.tree-card:hover{transform:translateY(-3px);border-color:var(--orange);box-shadow:var(--shadow-md)}
+.tree-card.active{background:#fff;border-color:var(--orange);box-shadow:var(--shadow-md)}
+.tree-card-num{font-family:'DM Serif Display',serif;font-size:1.05rem;color:var(--navy);margin-bottom:.2rem}
+.tree-card-vote{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:.15rem .4rem;border-radius:50px;display:inline-block}
+.tree-card-vote.churn{background:rgba(231,76,60,0.12);color:var(--red)}
+.tree-card-vote.stay{background:var(--green-light);color:#2E7D32}
+
+.feat-imp-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem}
+.feat-imp-label{flex:0 0 130px;font-size:.78rem;font-weight:600;color:var(--navy);text-align:right}
+.feat-imp-bar-wrap{flex:1;background:var(--bg-light);border-radius:50px;height:18px;overflow:hidden;position:relative}
+.feat-imp-bar{height:100%;background:linear-gradient(90deg,var(--orange),var(--orange-light));border-radius:50px;transition:width .6s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;justify-content:flex-end;padding-right:.5rem;color:#fff;font-size:.65rem;font-weight:700}
+
+/* ─── CASE STUDY ─── */
+.case-study{background:linear-gradient(135deg,var(--navy-dark),var(--navy));color:#fff;border-radius:var(--radius);padding:2.5rem;margin-top:2rem;position:relative;overflow:hidden}
+.case-study::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:rgba(232,122,46,0.12)}
+.case-study-content{position:relative;z-index:1}
+.case-tag{display:inline-block;padding:.3rem .8rem;border-radius:50px;background:rgba(255,255,255,0.1);color:var(--orange-light);font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem}
+.case-study h3{font-family:'DM Serif Display',serif;font-size:1.5rem;margin-bottom:.6rem}
+.case-study p{font-size:.92rem;color:rgba(255,255,255,0.78);line-height:1.7;margin-bottom:1rem}
+.case-customers{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1.5rem}
+.case-cust{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius-sm);padding:1.1rem}
+.case-cust-name{font-size:.92rem;font-weight:700;color:#fff;margin-bottom:.4rem;display:flex;align-items:center;gap:.4rem}
+.case-cust-vote{font-size:.62rem;font-weight:700;padding:.15rem .5rem;border-radius:50px;text-transform:uppercase;letter-spacing:.05em}
+.case-cust-vote.churn{background:rgba(231,76,60,0.25);color:#FFB3AE}
+.case-cust-vote.stay{background:rgba(76,175,80,0.25);color:#A5D6A7}
+.case-cust-line{font-size:.76rem;color:rgba(255,255,255,0.65);line-height:1.55;margin-bottom:.2rem}
+.case-cust-line .feat{color:var(--orange-light);font-weight:600}
+
+/* ─── QUIZ ─── */
+.quiz{background:var(--bg-card);border-radius:var(--radius);padding:1.8rem;border:1px solid var(--border);margin-top:1.5rem}
+.quiz-q{font-size:.95rem;font-weight:600;color:var(--navy);margin-bottom:1rem;display:flex;gap:.5rem}
+.quiz-q .qnum{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--orange-glow);color:var(--orange);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800}
+.quiz-options{display:flex;flex-direction:column;gap:.5rem}
+.quiz-option{padding:.7rem .9rem;background:var(--bg-light);border:1.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;font-size:.85rem;color:var(--text-primary);transition:all .15s;text-align:left;font-family:inherit}
+.quiz-option:hover{border-color:var(--orange);background:#fff}
+.quiz-option.correct{background:var(--green-light);border-color:var(--green);color:#2E7D32}
+.quiz-option.wrong{background:rgba(231,76,60,0.08);border-color:var(--red);color:#C0392B}
+.quiz-explanation{margin-top:.8rem;padding:.7rem .9rem;background:var(--orange-glow);border-radius:var(--radius-sm);font-size:.82rem;line-height:1.6;color:var(--text-primary);display:none}
+.quiz-explanation.show{display:block;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── TAKEAWAYS ─── */
+.takeaways{background:var(--bg-light);border-radius:var(--radius);padding:2rem;margin-top:2rem;border:1px solid var(--border)}
+.takeaways h3{font-family:'DM Serif Display',serif;font-size:1.3rem;color:var(--navy);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+.takeaways h3::before{content:'✦';color:var(--orange);font-size:1.5rem}
+.takeaway-list{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.takeaway{display:flex;gap:.6rem;align-items:flex-start;padding:.7rem;background:var(--bg-card);border-radius:var(--radius-sm);border:1px solid var(--border)}
+.takeaway-num{flex-shrink:0;width:24px;height:24px;border-radius:6px;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800}
+.takeaway-text{font-size:.82rem;line-height:1.55;color:var(--text-primary)}
+.takeaway-text strong{color:var(--orange)}
+
+/* ─── FOOTER ─── */
+footer{background:var(--bg-card);border-top:1px solid var(--border);padding:2rem;margin-top:2rem;text-align:center}
+.footer-inner{max-width:1080px;margin:0 auto}
+.footer-copy{font-size:.78rem;color:var(--text-muted)}
+.footer-nav{margin-top:1rem;display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap}
+.footer-nav a{font-size:.8rem;color:var(--text-secondary);text-decoration:none;transition:color .2s}
+.footer-nav a:hover{color:var(--orange)}
+
+/* ─── SVG ─── */
+.svg-canvas{width:100%;height:auto;display:block;border-radius:var(--radius-sm);background:#fff}
+
+@media(max-width:840px){
+  .nav{padding:0 1rem;height:64px}
+  .nav-brand-tag{display:none}
+  .nav-logo{width:42px}
+  section{padding:2.5rem 1.2rem}
+  .hero{padding:2.5rem 1.2rem 2rem}
+  .analogy-grid{grid-template-columns:1fr}
+  .playground{padding:1.3rem}
+  .playground-body.split{grid-template-columns:1fr}
+  .case-study{padding:1.6rem}
+  .case-customers{grid-template-columns:1fr}
+  .takeaway-list{grid-template-columns:1fr}
+  .forest-grid{grid-template-columns:repeat(3,1fr)}
+  .feat-imp-label{flex:0 0 90px;font-size:.7rem}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ NAV ═══ -->
+<nav class="nav">
+  <div class="nav-brand">
+    <div class="nav-brand-icon">M</div>
+    <div class="nav-brand-text">
+      <span class="nav-brand-name">Moksh<em>Path</em></span>
+      <span class="nav-brand-tag">Learn by Doing</span>
+    </div>
+  </div>
+  <div class="nav-right">
+    <span class="lesson-pill">Lesson 2 of 5</span>
+    <img src="hero.svg" alt="MokshPath" class="nav-logo" onerror="this.style.display='none'">
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge"><span class="dot"></span> Tree-Based Models</div>
+    <h1>Decision Trees & <em>Random Forests</em></h1>
+    <p class="hero-sub">
+      A doctor playing "20 questions." A jury reaching a verdict. That's the soul of tree-based machine learning — and the reason these models dominate spreadsheet-style data everywhere.
+    </p>
+    <div class="audience-chips">
+      <span class="audience-chip"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Manager</span>
+      <span class="audience-chip"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Engineer</span>
+      <span class="audience-chip"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Social Scientist</span>
+      <span class="audience-chip"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Curious Beginner</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SECTION 1 — INTUITION ═══ -->
+<section>
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">1</span> The Idea</div>
+      <h2 class="section-title">A doctor's checklist, automated</h2>
+      <p class="section-sub">Every decision tree is a sequence of yes/no questions. The model learns <em>which questions to ask first</em>, in what order, to separate outcomes most cleanly.</p>
+    </div>
+
+    <div class="analogy">
+      <div class="analogy-grid">
+        <div class="analogy-text">
+          <h3>"Should I bring an umbrella?"</h3>
+          <p>Imagine your morning routine:</p>
+          <p style="padding-left:.8rem;border-left:2px solid var(--border);font-style:italic;color:var(--navy)">
+            <em>Is it cloudy?</em> → If yes, <em>did it rain yesterday?</em> → If yes, <em>bring umbrella.</em>
+          </p>
+          <p>That's literally a decision tree. The clever part is the model figuring out — from past mornings — that "cloudy" is the most informative <em>first</em> question, not "what day of the week is it?"</p>
+          <div class="highlight">
+            <strong>Why trees are loved:</strong> You can <em>read</em> them. Show a tree to a doctor, a banker, a regulator — they immediately understand the logic.
+          </div>
+        </div>
+        <div>
+          <svg class="svg-canvas" viewBox="0 0 380 320" preserveAspectRatio="xMidYMid meet">
+            <!-- root -->
+            <rect x="130" y="20" width="120" height="40" rx="8" fill="#E87A2E"/>
+            <text class="tree-q" x="190" y="38">Is it cloudy?</text>
+            <text class="tree-q" x="190" y="52" font-size="9" opacity=".75">root question</text>
+            <!-- edges -->
+            <path class="tree-edge" d="M170 60 Q 100 90 70 110"/>
+            <text class="tree-edge-label" x="115" y="80">no</text>
+            <path class="tree-edge" d="M210 60 Q 280 90 310 110"/>
+            <text class="tree-edge-label" x="265" y="80">yes</text>
+            <!-- left node -->
+            <rect x="10" y="110" width="120" height="40" rx="8" fill="#4CAF50"/>
+            <text class="tree-leaf" x="70" y="128" fill="#fff">No umbrella ☀</text>
+            <text class="tree-leaf" x="70" y="142" fill="#fff" font-size="9" opacity=".85">95% sunny</text>
+            <!-- right node -->
+            <rect x="250" y="110" width="120" height="40" rx="8" fill="#3498DB"/>
+            <text class="tree-q" x="310" y="128">Wind &gt; 20 km/h?</text>
+            <text class="tree-q" x="310" y="142" font-size="9" opacity=".75">next split</text>
+            <!-- edges deeper -->
+            <path class="tree-edge" d="M290 150 Q 240 180 220 200"/>
+            <text class="tree-edge-label" x="245" y="170">no</text>
+            <path class="tree-edge" d="M330 150 Q 360 180 350 210"/>
+            <text class="tree-edge-label" x="355" y="180">yes</text>
+            <!-- leaves -->
+            <rect x="160" y="200" width="120" height="40" rx="8" fill="#F5943E"/>
+            <text class="tree-leaf" x="220" y="218" fill="#fff">Maybe — small one</text>
+            <text class="tree-leaf" x="220" y="232" fill="#fff" font-size="9" opacity=".85">70% drizzle</text>
+            <rect x="290" y="210" width="80" height="40" rx="8" fill="#E74C3C"/>
+            <text class="tree-leaf" x="330" y="228" fill="#fff">Yes! ☔</text>
+            <text class="tree-leaf" x="330" y="242" fill="#fff" font-size="9" opacity=".85">90% rain</text>
+            <text x="190" y="290" text-anchor="middle" font-size="11" fill="#6B6D7B" font-style="italic">Read top-to-bottom like a flowchart.</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SECTION 2 — BUILD A TREE ═══ -->
+<section style="background:var(--bg-light)">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">2</span> Playground</div>
+      <h2 class="section-title">Build your own tree, one split at a time</h2>
+      <p class="section-sub">Scenario: 20 telecom customers. Some <strong style="color:var(--red)">churned</strong>, some <strong style="color:var(--green)">stayed</strong>. Pick which question to ask first — the model normally picks the one that separates them best.</p>
+    </div>
+
+    <div class="playground">
+      <div class="playground-header">
+        <div class="playground-title"><span class="pg-num">A</span> Tree builder</div>
+        <div class="playground-task">Goal: Find the split that makes the cleanest groups</div>
+      </div>
+      <div id="treeBuilder">
+        <div class="playground-body split">
+          <div class="playground-viz">
+            <div id="treeDisplay" style="margin-bottom:1rem">
+              <div style="text-align:center;padding:2rem 1rem;color:var(--text-muted);font-size:.9rem">
+                <strong style="font-size:1.05rem;color:var(--navy);display:block;margin-bottom:.5rem">Starting state</strong>
+                20 customers waiting to be classified.<br>
+                <span style="color:var(--red)">8 churned</span> · <span style="color:var(--green)">12 stayed</span>
+              </div>
+            </div>
+            <svg id="purityCanvas" class="svg-canvas" viewBox="0 0 500 180" preserveAspectRatio="xMidYMid meet" style="margin-top:.5rem"></svg>
+            <div style="font-size:.72rem;color:var(--text-muted);margin-top:.5rem;text-align:center">"Purity" = how cleanly each branch separates churned from stayed.</div>
+          </div>
+          <div class="playground-controls">
+            <div class="control-row">
+              <label class="control-label">Pick your first split</label>
+              <div class="split-options" id="splitOptions">
+                <button class="split-btn" onclick="doSplit('contract')">
+                  <span class="feat-name">Contract type</span>
+                  <span class="feat-gain">month-to-month vs longer</span>
+                  <span class="best-tag">★ best split</span>
+                </button>
+                <button class="split-btn" onclick="doSplit('tenure')">
+                  <span class="feat-name">Tenure</span>
+                  <span class="feat-gain">&lt; 12 months vs longer</span>
+                </button>
+                <button class="split-btn" onclick="doSplit('bill')">
+                  <span class="feat-name">Monthly bill</span>
+                  <span class="feat-gain">high vs low</span>
+                </button>
+                <button class="split-btn" onclick="doSplit('age')">
+                  <span class="feat-name">Customer age</span>
+                  <span class="feat-gain">&lt; 35 vs older</span>
+                </button>
+              </div>
+            </div>
+            <button class="btn secondary" onclick="resetTree()">↺ Reset and try a different split</button>
+            <div class="insight" id="splitInsight">
+              <strong>Try the highlighted "best split" first.</strong> Then reset and pick a random one — see how much messier the groups stay.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SECTION 3 — OVERFITTING ═══ -->
+<section>
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">3</span> Where Trees Go Wrong</div>
+      <h2 class="section-title">Deeper isn't always smarter</h2>
+      <p class="section-sub">A tree that's allowed to grow forever will memorise the training data perfectly — and fail on anything new. This is <strong>overfitting</strong>, the cardinal sin of machine learning.</p>
+    </div>
+
+    <div class="playground">
+      <div class="playground-header">
+        <div class="playground-title"><span class="pg-num">B</span> Depth vs generalization</div>
+        <div class="playground-task">Goal: Spot the sweet spot before the model memorises noise</div>
+      </div>
+      <div class="playground-body split">
+        <div class="playground-viz">
+          <svg id="overfitCanvas" class="svg-canvas" viewBox="0 0 500 320" preserveAspectRatio="xMidYMid meet"></svg>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:.5rem;text-align:center">
+            Background colors = the tree's prediction regions. Dots = real customers (<strong style="color:var(--green)">stayed</strong>, <strong style="color:var(--red)">churned</strong>).
+          </div>
+        </div>
+        <div class="playground-controls">
+          <div class="control-row">
+            <label class="control-label">Max tree depth <span class="val" id="depthVal">2</span></label>
+            <input type="range" id="depth" min="1" max="9" step="1" value="2">
+            <div style="font-size:.7rem;color:var(--text-muted);margin-top:.2rem">How many questions deep the tree may grow.</div>
+          </div>
+          <div class="metric-row">
+            <div class="metric good"><div class="metric-label">Training accuracy</div><div class="metric-val" id="trainAcc">—</div></div>
+            <div class="metric highlight"><div class="metric-label">Test accuracy</div><div class="metric-val" id="testAcc">—</div></div>
+          </div>
+          <div class="insight" id="overfitInsight">
+            <strong>Watch carefully:</strong> Push depth all the way to 9. Training accuracy climbs to 100%, but test accuracy <em>falls</em>. The tree learned the training data — including its noise — but lost the bigger pattern.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SECTION 4 — RANDOM FOREST VOTE ═══ -->
+<section style="background:var(--bg-light)">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">4</span> Strength in Numbers</div>
+      <h2 class="section-title">Why a forest beats a single tree</h2>
+      <p class="section-sub">One opinionated tree can be wrong. <strong>Random Forest</strong> trains many slightly different trees on different slices of data, and takes a vote. The errors cancel out — like a jury, not a dictator.</p>
+    </div>
+
+    <div class="playground">
+      <div class="playground-header">
+        <div class="playground-title"><span class="pg-num">C</span> The jury votes</div>
+        <div class="playground-task">Goal: See how disagreement among trees averages into a steadier prediction</div>
+      </div>
+      <div>
+        <div style="text-align:center;margin-bottom:.8rem">
+          <strong style="font-size:.85rem;color:var(--navy)">Customer profile being predicted:</strong>
+          <div style="font-size:.85rem;color:var(--text-secondary);margin-top:.2rem">
+            34 yrs old · month-to-month plan · 6 months tenure · ₹1,800/month bill · 2 support calls
+          </div>
+        </div>
+        <div class="forest-grid" id="forestGrid"></div>
+        <div style="background:var(--orange-glow);border-radius:var(--radius-sm);padding:1.2rem;border:2px dashed var(--orange);text-align:center;margin-top:1rem">
+          <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--orange);margin-bottom:.4rem">Final vote (majority wins)</div>
+          <div id="forestResult" style="font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--navy)">—</div>
+          <div id="forestDetail" style="font-size:.78rem;color:var(--text-secondary);margin-top:.3rem">Click "Train forest" to see each tree's opinion.</div>
+        </div>
+        <div class="btn-group" style="margin-top:1rem;justify-content:center">
+          <button class="btn" onclick="trainForest()">🌲 Train 5 trees & vote</button>
+          <button class="btn secondary" onclick="trainForest(true)">🎲 Re-shuffle data (new forest)</button>
+        </div>
+        <div class="insight" style="margin-top:1.2rem">
+          <strong>Why this works:</strong> Each tree saw only ~63% of the data (different random sample) and only some features at each split. They make <em>different</em> mistakes. Averaging away their errors is what statisticians call <strong>variance reduction</strong>.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SECTION 5 — FEATURE IMPORTANCE ═══ -->
+<section>
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">5</span> Who Matters Most?</div>
+      <h2 class="section-title">Feature importance — the manager's favourite output</h2>
+      <p class="section-sub">After training, the forest can tell you <strong>which features it leaned on the most</strong>. This is gold for business — you learn what truly drives the outcome.</p>
+    </div>
+
+    <div class="playground">
+      <div class="playground-header">
+        <div class="playground-title"><span class="pg-num">D</span> Importance bars</div>
+        <div class="playground-task">Goal: Read the bar chart and shape a retention strategy</div>
+      </div>
+      <div class="playground-body split">
+        <div class="playground-viz" style="background:#fff">
+          <div style="padding:.5rem">
+            <div class="feat-imp-row"><div class="feat-imp-label">Contract type</div><div class="feat-imp-bar-wrap"><div class="feat-imp-bar" style="width:92%">0.34</div></div></div>
+            <div class="feat-imp-row"><div class="feat-imp-label">Tenure (months)</div><div class="feat-imp-bar-wrap"><div class="feat-imp-bar" style="width:72%">0.27</div></div></div>
+            <div class="feat-imp-row"><div class="feat-imp-label">Monthly bill</div><div class="feat-imp-bar-wrap"><div class="feat-imp-bar" style="width:48%">0.18</div></div></div>
+            <div class="feat-imp-row"><div class="feat-imp-label">Support calls</div><div class="feat-imp-bar-wrap"><div class="feat-imp-bar" style="width:32%">0.12</div></div></div>
+            <div class="feat-imp-row"><div class="feat-imp-label">Internet service</div><div class="feat-imp-bar-wrap"><div class="feat-imp-bar" style="width:14%">0.05</div></div></div>
+            <div class="feat-imp-row"><div class="feat-imp-label">Customer age</div><div class="feat-imp-bar-wrap"><div class="feat-imp-bar" style="width:9%">0.03</div></div></div>
+            <div class="feat-imp-row"><div class="feat-imp-label">Payment method</div><div class="feat-imp-bar-wrap"><div class="feat-imp-bar" style="width:4%">0.01</div></div></div>
+          </div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:.5rem;text-align:center">
+            Numbers sum to 1.0 — each is the share of importance.
+          </div>
+        </div>
+        <div>
+          <div style="background:var(--bg-light);border-radius:var(--radius-sm);padding:1rem;border:1px solid var(--border);margin-bottom:1rem">
+            <div style="font-size:.78rem;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem">📊 Reading this chart</div>
+            <div style="font-size:.83rem;color:var(--text-primary);line-height:1.65">
+              The model says <strong>contract type</strong> alone accounts for 34% of its decision-making. Combined with tenure, two features already explain 61% of churn.
+            </div>
+          </div>
+          <div style="background:var(--orange-glow);border-radius:var(--radius-sm);padding:1rem;border-left:3px solid var(--orange)">
+            <div style="font-size:.78rem;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem">💡 Business action</div>
+            <div style="font-size:.83rem;color:var(--text-primary);line-height:1.65">
+              "Offer 6-month contracts to month-to-month customers with &lt; 12 months tenure. We don't need to overhaul pricing or support — those have small impact."
+            </div>
+          </div>
+          <div class="insight" style="margin-top:1rem">
+            <strong>⚠️ Honest caveat:</strong> Feature importance tells you what the <em>model</em> used — not what causes churn in reality. A high-importance feature can still be a proxy for something else (e.g., zip code → income). Treat it as a strong hint, not a causal proof.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SECTION 6 — CASE STUDY ═══ -->
+<section style="background:var(--bg-light)">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">6</span> Live Case</div>
+      <h2 class="section-title">Three customers, one forest</h2>
+      <p class="section-sub">Same telecom model, three real-looking customers. The forest's prediction is more nuanced than "churn vs stay" — it gives a <em>probability</em> based on how many trees voted which way.</p>
+    </div>
+
+    <div class="case-study">
+      <div class="case-study-content">
+        <span class="case-tag">Case Study</span>
+        <h3>The retention team's morning briefing</h3>
+        <p>Three customers reached out yesterday. The model has analysed each. Who do we save first?</p>
+        <div class="case-customers">
+          <div class="case-cust">
+            <div class="case-cust-name">👨‍💼 Rohan, 28 <span class="case-cust-vote churn">87% churn</span></div>
+            <div class="case-cust-line"><span class="feat">Contract:</span> month-to-month</div>
+            <div class="case-cust-line"><span class="feat">Tenure:</span> 4 months</div>
+            <div class="case-cust-line"><span class="feat">Bill:</span> ₹2,200 (high)</div>
+            <div class="case-cust-line"><span class="feat">Support calls:</span> 3 (red flag)</div>
+            <div style="font-size:.76rem;color:#FFB3AE;font-style:italic;margin-top:.5rem">→ Call today. Offer 12-month plan with discount.</div>
+          </div>
+          <div class="case-cust">
+            <div class="case-cust-name">👩‍🔬 Priya, 41 <span class="case-cust-vote stay">12% churn</span></div>
+            <div class="case-cust-line"><span class="feat">Contract:</span> 2-year</div>
+            <div class="case-cust-line"><span class="feat">Tenure:</span> 36 months</div>
+            <div class="case-cust-line"><span class="feat">Bill:</span> ₹1,400</div>
+            <div class="case-cust-line"><span class="feat">Support calls:</span> 0</div>
+            <div style="font-size:.76rem;color:#A5D6A7;font-style:italic;margin-top:.5rem">→ Safe. Don't waste retention budget here.</div>
+          </div>
+          <div class="case-cust">
+            <div class="case-cust-name">🧓 Mr Iyer, 62 <span class="case-cust-vote churn">54% churn</span></div>
+            <div class="case-cust-line"><span class="feat">Contract:</span> month-to-month</div>
+            <div class="case-cust-line"><span class="feat">Tenure:</span> 28 months</div>
+            <div class="case-cust-line"><span class="feat">Bill:</span> ₹900 (low)</div>
+            <div class="case-cust-line"><span class="feat">Support calls:</span> 1</div>
+            <div style="font-size:.76rem;color:#FFE082;font-style:italic;margin-top:.5rem">→ Borderline. Trees disagree (8 say churn, 7 say stay).</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SECTION 7 — QUIZ ═══ -->
+<section>
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label"><span class="num">7</span> Check Yourself</div>
+      <h2 class="section-title">Three quick questions</h2>
+    </div>
+
+    <div class="quiz">
+      <div class="quiz-q"><span class="qnum">1</span>Your single decision tree scores 99% on training data but 64% on test data. What's happening?</div>
+      <div class="quiz-options">
+        <button class="quiz-option" onclick="answer(this,false,1)">The model is too simple — increase depth.</button>
+        <button class="quiz-option" onclick="answer(this,true,1)">Classic overfitting — the tree memorised noise. Limit depth or use a forest.</button>
+        <button class="quiz-option" onclick="answer(this,false,1)">The training data is contaminated.</button>
+      </div>
+      <div class="quiz-explanation" id="exp1">
+        <strong>Correct:</strong> The huge train/test gap is the signature of overfitting. Fixes: cap max_depth, require more samples per split, or move to Random Forest.
+      </div>
+    </div>
+
+    <div class="quiz">
+      <div class="quiz-q"><span class="qnum">2</span>Why is a Random Forest usually better than a single tree?</div>
+      <div class="quiz-options">
+        <button class="quiz-option" onclick="answer(this,false,2)">It uses smarter individual trees.</button>
+        <button class="quiz-option" onclick="answer(this,true,2)">Different trees make different mistakes; averaging cancels out their errors.</button>
+        <button class="quiz-option" onclick="answer(this,false,2)">Forests don't need training data.</button>
+      </div>
+      <div class="quiz-explanation" id="exp2">
+        <strong>Correct:</strong> This is "variance reduction" — the wisdom-of-crowds effect. Each tree alone is noisy; the average is steady.
+      </div>
+    </div>
+
+    <div class="quiz">
+      <div class="quiz-q"><span class="qnum">3</span>The model lists "zip code" as the most important feature for predicting loan default. What should a responsible analyst do?</div>
+      <div class="quiz-options">
+        <button class="quiz-option" onclick="answer(this,false,3)">Use it as a top feature — model importance is final.</button>
+        <button class="quiz-option" onclick="answer(this,true,3)">Investigate — zip code may be a proxy for income or ethnicity, which raises fairness concerns.</button>
+        <button class="quiz-option" onclick="answer(this,false,3)">Remove it because no model should use location.</button>
+      </div>
+      <div class="quiz-explanation" id="exp3">
+        <strong>Correct:</strong> Feature importance shows what the model used — not whether using it is ethical or causal. Always interrogate top features for proxy variables and fairness implications.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SECTION 8 — TAKEAWAYS ═══ -->
+<section style="background:var(--bg-light);padding-bottom:4rem">
+  <div class="container">
+    <div class="takeaways">
+      <h3>What to carry away</h3>
+      <div class="takeaway-list">
+        <div class="takeaway"><div class="takeaway-num">1</div><div class="takeaway-text"><strong>Decision trees</strong> are sequences of yes/no questions that anyone can read and follow.</div></div>
+        <div class="takeaway"><div class="takeaway-num">2</div><div class="takeaway-text">A tree picks each split by asking "which question makes the cleanest groups?"</div></div>
+        <div class="takeaway"><div class="takeaway-num">3</div><div class="takeaway-text"><strong>Overfitting</strong> happens when a tree grows so deep it memorises training quirks.</div></div>
+        <div class="takeaway"><div class="takeaway-num">4</div><div class="takeaway-text"><strong>Random Forest</strong> = many trees on slightly different data, voting together.</div></div>
+        <div class="takeaway"><div class="takeaway-num">5</div><div class="takeaway-text"><strong>Variance reduction</strong> is the magic: errors cancel when trees disagree differently.</div></div>
+        <div class="takeaway"><div class="takeaway-num">6</div><div class="takeaway-text"><strong>Feature importance</strong> shows what the model used — not necessarily what truly causes the outcome.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-copy">© 2026 MokshPath — Guided Path to True Learning</div>
+    <div class="footer-nav">
+      <a href="lesson-1-regression.html">← Linear & Logistic Regression</a>
+      <a href="lesson-3-xgboost-lightgbm.html">Next → XGBoost / LightGBM</a>
+      <a href="lesson-4-model-evaluation.html">Model Evaluation</a>
+      <a href="lesson-5-shap-values.html">SHAP Values</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ════════════════════════════════════════
+   PLAYGROUND A — BUILD TREE
+   ════════════════════════════════════════ */
+// 20 customers: each has features + churn label
+// We pre-encode the OUTCOME of each possible split
+const splitResults = {
+  contract: {
+    label: 'Contract type',
+    leftQ: 'Month-to-month',
+    rightQ: '1-year or 2-year',
+    left: { churn:7, stay:3 },  // very impure
+    right: { churn:1, stay:9 }, // very pure!
+    purity: 0.78,
+    isBest: true,
+    note: '👑 Almost all "stayers" sit on longer contracts. Big drop in impurity.'
+  },
+  tenure: {
+    label: 'Tenure',
+    leftQ: '< 12 months',
+    rightQ: '≥ 12 months',
+    left: { churn:6, stay:4 },
+    right: { churn:2, stay:8 },
+    purity: 0.60,
+    isBest: false,
+    note: 'Decent split — newer customers churn more, but the right branch still has some churners.'
+  },
+  bill: {
+    label: 'Monthly bill',
+    leftQ: 'High (₹1500+)',
+    rightQ: 'Low (< ₹1500)',
+    left: { churn:5, stay:5 },
+    right: { churn:3, stay:7 },
+    purity: 0.30,
+    isBest: false,
+    note: 'Weak — the left branch is a 50/50 mess. The model gained almost nothing.'
+  },
+  age: {
+    label: 'Customer age',
+    leftQ: '< 35 years',
+    rightQ: '≥ 35 years',
+    left: { churn:4, stay:6 },
+    right: { churn:4, stay:6 },
+    purity: 0.10,
+    isBest: false,
+    note: 'Useless! Age splits the data identically — no information gained.'
+  }
+};
+
+function doSplit(key){
+  const s = splitResults[key];
+  const display = document.getElementById('treeDisplay');
+  display.innerHTML = `
+    <div style="text-align:center;padding:.5rem 1rem">
+      <strong style="font-size:1rem;color:var(--navy);display:block;margin-bottom:.5rem">Split on: ${s.label}</strong>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-top:.7rem">
+        <div style="background:#fff;padding:.7rem;border-radius:8px;border:2px solid ${s.left.churn > s.left.stay ? 'rgba(231,76,60,0.3)' : 'rgba(76,175,80,0.3)'}">
+          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:.05em">${s.leftQ}</div>
+          <div style="display:flex;gap:.3rem;justify-content:center;margin-top:.3rem;flex-wrap:wrap">
+            ${'●'.repeat(s.left.churn).split('').map(()=>'<span style="color:#E74C3C;font-size:1rem">●</span>').join('')}
+            ${'●'.repeat(s.left.stay).split('').map(()=>'<span style="color:#4CAF50;font-size:1rem">●</span>').join('')}
+          </div>
+          <div style="font-size:.7rem;color:var(--text-secondary);margin-top:.3rem">${s.left.churn} churn · ${s.left.stay} stay</div>
+        </div>
+        <div style="background:#fff;padding:.7rem;border-radius:8px;border:2px solid ${s.right.churn > s.right.stay ? 'rgba(231,76,60,0.3)' : 'rgba(76,175,80,0.3)'}">
+          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:.05em">${s.rightQ}</div>
+          <div style="display:flex;gap:.3rem;justify-content:center;margin-top:.3rem;flex-wrap:wrap">
+            ${'●'.repeat(s.right.churn).split('').map(()=>'<span style="color:#E74C3C;font-size:1rem">●</span>').join('')}
+            ${'●'.repeat(s.right.stay).split('').map(()=>'<span style="color:#4CAF50;font-size:1rem">●</span>').join('')}
+          </div>
+          <div style="font-size:.7rem;color:var(--text-secondary);margin-top:.3rem">${s.right.churn} churn · ${s.right.stay} stay</div>
+        </div>
+      </div>
+    </div>
+  `;
+  // draw purity bar
+  const W=500, H=180;
+  let svg = '';
+  svg += `<text class="axis-label" x="${W/2}" y="20" text-anchor="middle" font-weight="700" fill="#2B2D42">Information Gain (higher = better split)</text>`;
+  const barY = 60, barH = 28;
+  svg += `<rect x="40" y="${barY}" width="${W-80}" height="${barH}" fill="#F9F5F0" rx="6"/>`;
+  const fillW = (W-80) * s.purity;
+  svg += `<rect x="40" y="${barY}" width="${fillW}" height="${barH}" fill="${s.purity>0.6?'#4CAF50':s.purity>0.4?'#F5943E':'#E74C3C'}" rx="6"/>`;
+  svg += `<text x="${40+fillW+8}" y="${barY+barH/2+4}" fill="#2B2D42" font-size="13" font-weight="700">${(s.purity*100).toFixed(0)}%</text>`;
+  // markers
+  ['Low','Medium','High','Excellent'].forEach((label, i)=>{
+    const x = 40 + (W-80)*(i+1)/4 - 30;
+    svg += `<line x1="${x+30}" x2="${x+30}" y1="${barY-3}" y2="${barY+barH+3}" stroke="#E5DDD4" stroke-width="1"/>`;
+    svg += `<text x="${x+30}" y="${barY+barH+18}" text-anchor="middle" font-size="9" fill="#9597A6">${label}</text>`;
+  });
+  svg += `<text x="${W/2}" y="${H-15}" text-anchor="middle" font-size="11" fill="#6B6D7B" font-style="italic">${s.note}</text>`;
+  document.getElementById('purityCanvas').innerHTML = svg;
+
+  const ins = document.getElementById('splitInsight');
+  if(s.isBest){
+    ins.innerHTML = '<strong>🎯 Excellent choice!</strong> This is what the algorithm would pick. The right branch is now almost pure "stayed" — we\'ve learned a lot from one question. The tree would now ask another question on whichever branch is still messy.';
+    ins.className = 'insight green';
+  } else if(s.purity > 0.5){
+    ins.innerHTML = `<strong>Not bad.</strong> Information gain is ${(s.purity*100).toFixed(0)}%, but Contract Type gave ${(splitResults.contract.purity*100).toFixed(0)}%. The algorithm always picks the highest-gain split first.`;
+    ins.className = 'insight';
+  } else {
+    ins.innerHTML = `<strong>Poor split.</strong> The groups are still mixed — only ${(s.purity*100).toFixed(0)}% information gain. The algorithm would never pick this; try the highlighted one.`;
+    ins.className = 'insight';
+  }
+}
+function resetTree(){
+  document.getElementById('treeDisplay').innerHTML = `
+    <div style="text-align:center;padding:2rem 1rem;color:var(--text-muted);font-size:.9rem">
+      <strong style="font-size:1.05rem;color:var(--navy);display:block;margin-bottom:.5rem">Starting state</strong>
+      20 customers waiting to be classified.<br>
+      <span style="color:var(--red)">8 churned</span> · <span style="color:var(--green)">12 stayed</span>
+    </div>
+  `;
+  document.getElementById('purityCanvas').innerHTML = '';
+  document.getElementById('splitInsight').innerHTML = '<strong>Try the highlighted "best split" first.</strong> Then reset and pick a random one — see how much messier the groups stay.';
+  document.getElementById('splitInsight').className = 'insight';
+}
+
+/* ════════════════════════════════════════
+   PLAYGROUND B — OVERFITTING
+   ════════════════════════════════════════ */
+const ofData = [];
+(function(){
+  // Generate two blobs + some noise points
+  const rng = mulberry32(7);
+  for(let i=0; i<22; i++){
+    const x = 1 + rng()*4.5; const y = 1 + rng()*4.5;
+    ofData.push({x, y, label:0, train:true});
+  }
+  for(let i=0; i<22; i++){
+    const x = 4.5 + rng()*4.5; const y = 4.5 + rng()*4.5;
+    ofData.push({x, y, label:1, train:true});
+  }
+  // noise points (5)
+  ofData.push({x:7, y:2, label:0, train:true});
+  ofData.push({x:8, y:1.5, label:0, train:true});
+  ofData.push({x:2, y:7, label:1, train:true});
+  ofData.push({x:1.5, y:8, label:1, train:true});
+  ofData.push({x:5, y:5, label:1, train:true});
+  // test points (10)
+  for(let i=0; i<5; i++){
+    const x = 1 + rng()*4; const y = 1 + rng()*4;
+    ofData.push({x, y, label:0, train:false});
+  }
+  for(let i=0; i<5; i++){
+    const x = 5 + rng()*4; const y = 5 + rng()*4;
+    ofData.push({x, y, label:1, train:false});
+  }
+})();
+function mulberry32(seed){let a=seed;return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+document.getElementById('depth').addEventListener('input', drawOverfit);
+function drawOverfit(){
+  const depth = parseInt(document.getElementById('depth').value);
+  document.getElementById('depthVal').textContent = depth;
+  const W=500, H=320, padL=40, padR=20, padT=20, padB=40;
+  const xMin=0, xMax=10, yMin=0, yMax=10;
+  const xs = v => padL + (v-xMin)/(xMax-xMin)*(W-padL-padR);
+  const ys = v => H-padB - (v-yMin)/(yMax-yMin)*(H-padT-padB);
+
+  let svg = '';
+  // Build a simple "tree" classifier on the grid (simulated)
+  // Higher depth → more wiggly, eventually overfits to noise
+  const gridN = 40;
+  const trainData = ofData.filter(d=>d.train);
+  for(let i=0; i<gridN; i++){
+    for(let j=0; j<gridN; j++){
+      const x = xMin + (i+0.5)/gridN*(xMax-xMin);
+      const y = yMin + (j+0.5)/gridN*(yMax-yMin);
+      const pred = predictTree(x, y, depth, trainData);
+      const color = pred === 1 ? 'rgba(76,175,80,0.18)' : 'rgba(231,76,60,0.18)';
+      svg += `<rect x="${xs(x - (xMax-xMin)/gridN/2)}" y="${ys(y + (yMax-yMin)/gridN/2)}" width="${(W-padL-padR)/gridN+0.5}" height="${(H-padT-padB)/gridN+0.5}" fill="${color}"/>`;
+    }
+  }
+  // grid lines
+  for(let v=0; v<=10; v+=2){
+    svg += `<line class="grid-line" x1="${xs(v)}" x2="${xs(v)}" y1="${padT}" y2="${H-padB}" stroke="#E5DDD4" stroke-width=".5"/>`;
+    svg += `<line class="grid-line" x1="${padL}" x2="${W-padR}" y1="${ys(v)}" y2="${ys(v)}" stroke="#E5DDD4" stroke-width=".5"/>`;
+  }
+  // axes
+  svg += `<line x1="${padL}" x2="${padL}" y1="${padT}" y2="${H-padB}" stroke="#9597A6"/>`;
+  svg += `<line x1="${padL}" x2="${W-padR}" y1="${H-padB}" y2="${H-padB}" stroke="#9597A6"/>`;
+  svg += `<text font-size="10" fill="#9597A6" x="${W/2}" y="${H-8}" text-anchor="middle">Monthly bill (scaled) →</text>`;
+  svg += `<text font-size="10" fill="#9597A6" x="14" y="${H/2}" text-anchor="middle" transform="rotate(-90 14 ${H/2})">Support calls →</text>`;
+
+  // points
+  let trainCorrect=0, trainTotal=0, testCorrect=0, testTotal=0;
+  ofData.forEach(d=>{
+    const pred = predictTree(d.x, d.y, depth, trainData);
+    if(d.train){
+      trainTotal++; if(pred === d.label) trainCorrect++;
+    } else {
+      testTotal++; if(pred === d.label) testCorrect++;
+    }
+    const color = d.label === 1 ? '#4CAF50' : '#E74C3C';
+    if(d.train){
+      svg += `<circle cx="${xs(d.x)}" cy="${ys(d.y)}" r="4" fill="${color}" stroke="#fff" stroke-width="1"/>`;
+    } else {
+      svg += `<rect x="${xs(d.x)-4}" y="${ys(d.y)-4}" width="8" height="8" fill="${color}" stroke="#fff" stroke-width="1" transform="rotate(45 ${xs(d.x)} ${ys(d.y)})"/>`;
+    }
+  });
+
+  // legend
+  svg += `<rect x="${W-130}" y="${padT+5}" width="120" height="42" fill="#fff" stroke="#E5DDD4" rx="4" opacity=".9"/>`;
+  svg += `<circle cx="${W-115}" cy="${padT+18}" r="4" fill="#4CAF50"/>`;
+  svg += `<text x="${W-105}" y="${padT+22}" font-size="9" fill="#2B2D42">● training</text>`;
+  svg += `<rect x="${W-119}" y="${padT+32}" width="8" height="8" fill="#4CAF50" transform="rotate(45 ${W-115} ${padT+36})"/>`;
+  svg += `<text x="${W-105}" y="${padT+40}" font-size="9" fill="#2B2D42">◆ test</text>`;
+
+  document.getElementById('overfitCanvas').innerHTML = svg;
+  document.getElementById('trainAcc').textContent = Math.round(100*trainCorrect/trainTotal) + '%';
+  document.getElementById('testAcc').textContent = Math.round(100*testCorrect/testTotal) + '%';
+
+  // insight
+  const ins = document.getElementById('overfitInsight');
+  if(depth <= 2){
+    ins.innerHTML = '<strong>Underfitting.</strong> The tree is too simple — it draws one big line and misses real structure. Both accuracies are mediocre.';
+    ins.className = 'insight';
+  } else if(depth >= 3 && depth <= 5){
+    ins.innerHTML = '<strong>Sweet spot.</strong> The boundary follows the two main clusters without chasing every individual point. Test accuracy is at its peak here.';
+    ins.className = 'insight green';
+  } else {
+    ins.innerHTML = '<strong>Overfitting!</strong> Look at those weird island-shapes around the 5 noise points. Training accuracy soared, but test accuracy dropped — the tree learned the noise.';
+    ins.className = 'insight';
+  }
+}
+function predictTree(x, y, depth, data){
+  // Simulate increasingly-flexible decision boundary
+  // depth=1: single line; depth grows: more wiggle around noise
+  if(depth === 1) return x + y > 10 ? 1 : 0;
+  if(depth === 2) return (x > 4.5 && y > 4.5) ? 1 : (x < 4 && y < 4) ? 0 : (x+y > 9 ? 1 : 0);
+  if(depth === 3) return (x > 4.5 && y > 4.5) ? 1 : (x < 4 && y < 4) ? 0 : (x+y > 8.5 ? 1 : 0);
+  // Higher depth: trees memorize noise — find nearest training point
+  let nearest = null, bestD = Infinity;
+  data.forEach(d=>{
+    const dist = (d.x-x)**2 + (d.y-y)**2;
+    if(dist < bestD){ bestD = dist; nearest = d; }
+  });
+  // Blend: at high depth, follow nearest neighbour exactly
+  const blend = (depth-3) / 6;
+  if(blend > 0.7) return nearest.label;
+  if((x > 4.5 && y > 4.5) || x+y > 9.5) return Math.random() < blend ? nearest.label : 1;
+  if(x < 4 && y < 4) return Math.random() < blend ? nearest.label : 0;
+  // fuzzy zone — depth determines whether noise points influence
+  return nearest.label;
+}
+// Make predictions deterministic by seeding from coords
+function predictTreeDet(x, y, depth, data){
+  if(depth === 1) return x + y > 10 ? 1 : 0;
+  if(depth === 2) return (x > 4.5 && y > 4.5) ? 1 : (x < 4 && y < 4) ? 0 : (x+y > 9 ? 1 : 0);
+  if(depth === 3) return ((x > 4.5 && y > 4.5) || (x+y > 9.5)) ? 1 : ((x < 4 && y < 4) || (x+y < 5)) ? 0 : (x+y > 8.5 ? 1 : 0);
+  // At depth >=4 the model creates small "islands" around noise points
+  // Simulate by checking distance to noise points specifically
+  const noiseP = [{x:7,y:2,l:0},{x:8,y:1.5,l:0},{x:2,y:7,l:1},{x:1.5,y:8,l:1},{x:5,y:5,l:1}];
+  const radius = Math.max(0, 1.5 - (depth-4)*0.3); // shrinking islands as depth grows
+  for(const np of noiseP){
+    if((np.x-x)**2 + (np.y-y)**2 < radius*radius){
+      return np.l;
+    }
+  }
+  return ((x > 4.5 && y > 4.5) || x+y > 9) ? 1 : 0;
+}
+// Override predictTree to use deterministic version
+window.predictTree = predictTreeDet;
+drawOverfit();
+
+/* ════════════════════════════════════════
+   PLAYGROUND C — RANDOM FOREST VOTE
+   ════════════════════════════════════════ */
+let forestState = null;
+function trainForest(reshuffle){
+  // 5 trees vote on the same customer
+  const baseProbs = [0.85, 0.72, 0.38, 0.91, 0.55]; // each tree's probability of churn
+  let probs;
+  if(reshuffle){
+    probs = baseProbs.map(p => Math.max(0.1, Math.min(0.95, p + (Math.random()-0.5)*0.3)));
+  } else if(forestState){
+    probs = forestState;
+  } else {
+    probs = baseProbs;
+  }
+  forestState = probs;
+
+  const grid = document.getElementById('forestGrid');
+  grid.innerHTML = '';
+  let churnVotes = 0;
+  let totalP = 0;
+  probs.forEach((p, i)=>{
+    const vote = p > 0.5 ? 'churn' : 'stay';
+    if(vote === 'churn') churnVotes++;
+    totalP += p;
+    const card = document.createElement('div');
+    card.className = 'tree-card';
+    card.style.opacity = '0';
+    card.innerHTML = `
+      <svg viewBox="0 0 60 80" style="width:50px;height:60px;display:block;margin:0 auto .3rem">
+        <line x1="30" y1="50" x2="15" y2="65" stroke="#2B2D42" stroke-width="1.5"/>
+        <line x1="30" y1="50" x2="45" y2="65" stroke="#2B2D42" stroke-width="1.5"/>
+        <line x1="30" y1="20" x2="30" y2="50" stroke="#2B2D42" stroke-width="1.5"/>
+        <line x1="30" y1="20" x2="15" y2="35" stroke="#2B2D42" stroke-width="1.5"/>
+        <line x1="30" y1="20" x2="45" y2="35" stroke="#2B2D42" stroke-width="1.5"/>
+        <circle cx="30" cy="20" r="6" fill="${vote==='churn'?'#E74C3C':'#4CAF50'}"/>
+        <circle cx="15" cy="35" r="5" fill="${vote==='churn'?'#E74C3C':'#4CAF50'}" opacity=".7"/>
+        <circle cx="45" cy="35" r="5" fill="${vote==='churn'?'#E74C3C':'#4CAF50'}" opacity=".7"/>
+        <circle cx="15" cy="65" r="4" fill="${vote==='churn'?'#E74C3C':'#4CAF50'}" opacity=".5"/>
+        <circle cx="45" cy="65" r="4" fill="${vote==='churn'?'#E74C3C':'#4CAF50'}" opacity=".5"/>
+      </svg>
+      <div class="tree-card-num">Tree ${i+1}</div>
+      <span class="tree-card-vote ${vote}">${Math.round(p*100)}% churn</span>
+    `;
+    grid.appendChild(card);
+    // Stagger animation
+    setTimeout(()=>{ card.style.transition = 'opacity .4s'; card.style.opacity = '1'; }, i*250);
+  });
+  const avgP = totalP / probs.length;
+  const finalVote = churnVotes >= 3 ? 'CHURN' : 'STAY';
+  const color = finalVote === 'CHURN' ? '#E74C3C' : '#4CAF50';
+  setTimeout(()=>{
+    document.getElementById('forestResult').innerHTML = `<span style="color:${color}">${finalVote}</span> · ${Math.round(avgP*100)}% probability`;
+    document.getElementById('forestDetail').textContent = `${churnVotes} of 5 trees voted "churn." Averaged probability across all trees: ${Math.round(avgP*100)}%.`;
+  }, probs.length*250);
+}
+
+/* ════════════════════════════════════════
+   QUIZ
+   ════════════════════════════════════════ */
+function answer(btn, correct, num){
+  const parent = btn.parentElement;
+  Array.from(parent.children).forEach(c=>{
+    c.disabled = true;
+    c.style.cursor = 'default';
+  });
+  btn.classList.add(correct?'correct':'wrong');
+  document.getElementById('exp'+num).classList.add('show');
+}
+</script>
+</body>
+</html>
